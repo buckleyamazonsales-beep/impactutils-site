@@ -46,6 +46,8 @@ jobs:
           set ssl:verify-certificate no
           cd "$SFTP_REMOTE_PATH"
           mkdir -p api/data
+          chmod 755 api
+          chmod 777 api/data
           put -O . .htaccess
           put -O . index.html
           put -O . styles.css
@@ -74,5 +76,6 @@ jobs:
           put -O api api/stripe-webhook.php
           put -O api api/verify-checkout-session.php
           put -O api/data api/data/community-state.json
+          chmod 666 api/data/community-state.json
           bye
           EOF
