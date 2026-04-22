@@ -705,6 +705,7 @@ async function syncCommunityStateFromServer() {
       throw new Error(data.error || `Community sync failed (${res.status}).`);
     }
     applyCommunityStatePayload(data);
+    lastCommunitySnapshot = getCommunitySnapshot();
     return true;
   } catch (e) {
     console.warn('syncCommunityStateFromServer', e);
@@ -732,6 +733,90 @@ async function postCommunityAction(action, payload = {}) {
 
 function canUseLocalCommunityFallback() {
   return !getCommunityApiBase();
+}
+
+function getCommunitySnapshot() {
+  return JSON.stringify({
+    listings: (state?.marketplace_listings || []).map(entry => [entry.id, entry.status, entry.cancelled_at || '', entry.date || '']),
+    tickets: (state?.tickets || []).map(ticket => {
+      const messages = ticket.messages || [];
+      const lastMessage = messages.length ? messages[messages.length - 1] : null;
+      return [ticket.id, ticket.status, messages.length, lastMessage?.timestamp || 0];
+    })
+  });
+}
+
+function getCurrentPanelId() {
+  return document.querySelector('.panel.active')?.id || '';
+}
+
+function isCommunityPanelActive() {
+  return ['panel-marketplace', 'panel-moderation', 'panel-admin'].includes(getCurrentPanelId());
+}
+
+function renderTicketMessagesInto(ticketId, scope = 'user') {
+  const ticket = (state.tickets || []).find(entry => entry.id === ticketId);
+  const container = document.getElementById(`${scope}-ticket-messages-${ticketId}`);
+  if (!ticket || !container) return;
+
+  const viewerEmail = String(currentUser?.email || '').trim().toLowerCase();
+  container.innerHTML = (ticket.messages || []).map(msg => {
+    const senderEmail = String(msg.sender || '').trim().toLowerCase();
+    const isMine = !!viewerEmail && senderEmail === viewerEmail;
+    return `
+      <div class="ticket-message ${msg.isStaff ? 'staff' : ''} ${isMine ? 'mine' : 'theirs'}">
+        <div class="ticket-message-meta">
+          <span>${escapeHtml(msg.sender_display || 'User')}${msg.isStaff ? ' [STAFF]' : ''}</span>
+          <span>${timeAgo(msg.timestamp)}</span>
+        </div>
+        <div class="ticket-message-body">${escapeHtml(msg.text || '')}</div>
+      </div>
+    `;
+  }).join('') || '<div class="empty">No messages yet.</div>';
+  container.scrollTop = container.scrollHeight;
+}
+
+function applyOpenTicketThreads(scope = 'user') {
+  openTicketThreads.forEach(ticketId => {
+    const wrap = document.getElementById(`${scope}-ticket-thread-${ticketId}`);
+    if (!wrap) return;
+    wrap.classList.remove('hidden');
+    renderTicketMessagesInto(ticketId, scope);
+  });
+}
+
+function refreshCommunityViewsFromState() {
+  const panelId = getCurrentPanelId();
+  if (panelId === 'panel-marketplace') {
+    renderMarketplaceStats();
+    renderMyPendingListings();
+    renderMarketplacePending();
+    renderMarketplaceListings();
+    viewMyTickets();
+    applyOpenTicketThreads('marketplace');
+  }
+  if (panelId === 'panel-moderation') {
+    renderModPendingListings();
+    void loadTickets();
+  }
+  if (panelId === 'panel-admin') {
+    renderAdminMarketplace();
+    renderAdminPendingListings();
+    void loadAdminTickets();
+  }
+}
+
+function startCommunityPolling() {
+  if (communityPollTimer) return;
+  communityPollTimer = setInterval(async () => {
+    if (document.hidden || !isCommunityPanelActive()) return;
+    const synced = await syncCommunityStateFromServer();
+    if (!synced) return;
+    const nextSnapshot = getCommunitySnapshot();
+    if (nextSnapshot === lastCommunitySnapshot) return;
+    lastCommunitySnapshot = nextSnapshot;
+    refreshCommunityViewsFromState();
+  }, 5000);
 }
 
 async function notifySiteUserRegistry(event) {
@@ -983,6 +1068,9 @@ function handleDashboardUpgradeClick() {
   openPricingModal('pro');
 }
 let state, sessionGP = 0, sessionProfit = 0, currentUser = null, authMode = 'signup';
+const openTicketThreads = new Set();
+let communityPollTimer = null;
+let lastCommunitySnapshot = '';
 let adRotationTimer = null;
 
 function getCurrentUser() {
@@ -2792,51 +2880,36 @@ async function loadAdminTickets() {
   }
   
   container.innerHTML = tickets.map(ticket => `
-    <div class="ticket-card" id="admin-ticket-${ticket.id}" style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--surface2);">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div class="ticket-chat-card" id="admin-ticket-${ticket.id}">
+      <div class="ticket-chat-head">
         <div>
-          <div style="font-weight:600;font-size:14px;">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
-          <div style="font-size:11px;color:var(--muted);">By ${escapeHtml(ticket.created_by_display)} · ${timeAgo(ticket.created_at)}</div>
+          <div class="ticket-chat-title">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
+          <div class="ticket-chat-subtitle">By ${escapeHtml(ticket.created_by_display)} · ${timeAgo(ticket.created_at)}</div>
         </div>
         <div class="btn-row">
-          <button class="btn primary btn-sm" onclick="openAdminTicketChat('${ticket.id}')">Open Chat</button>
+          <span class="ticket-status ${ticket.status === 'open' ? 'open' : 'closed'}">${escapeHtml(String(ticket.status || 'open').toUpperCase())}</span>
+          <button class="btn primary btn-sm" onclick="openAdminTicketChat('${ticket.id}')">${openTicketThreads.has(ticket.id) ? 'Refresh Chat' : 'Open Chat'}</button>
           <button class="btn btn-sm" onclick="closeAdminTicket('${ticket.id}')">Close</button>
         </div>
       </div>
-      <div id="admin-ticket-messages-${ticket.id}" style="max-height:200px;overflow-y:auto;margin-bottom:12px;display:none;">
-        <div class="ticket-messages-inner" id="admin-ticket-messages-inner-${ticket.id}"></div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="admin-ticket-input-${ticket.id}" placeholder="Type a message..." style="flex:1;" onkeydown="if(event.key==='Enter')sendAdminTicketMessage('${ticket.id}')">
-        <button class="btn primary btn-sm" onclick="sendAdminTicketMessage('${ticket.id}')">Send</button>
+      <div class="ticket-thread ${openTicketThreads.has(ticket.id) ? '' : 'hidden'}" id="admin-ticket-thread-${ticket.id}">
+        <div class="ticket-thread-messages" id="admin-ticket-messages-${ticket.id}"></div>
+        <div class="ticket-thread-input">
+          <input type="text" id="admin-ticket-input-${ticket.id}" placeholder="Reply as staff..." onkeydown="if(event.key==='Enter')sendAdminTicketMessage('${ticket.id}')">
+          <button class="btn primary btn-sm" onclick="sendAdminTicketMessage('${ticket.id}')">Send</button>
+        </div>
       </div>
     </div>
   `).join('');
+  applyOpenTicketThreads('admin');
 }
 
 async function openAdminTicketChat(ticketId) {
   await syncCommunityStateFromServer();
-  const messagesContainer = document.getElementById(`admin-ticket-messages-${ticketId}`);
-  const messagesInner = document.getElementById(`admin-ticket-messages-inner-${ticketId}`);
-  if (!messagesContainer || !messagesInner) return;
-  
-  messagesContainer.style.display = 'block';
-  
-  const ticket = (state.tickets || []).find(t => t.id === ticketId);
-  if (!ticket) return;
-  
-  messagesInner.innerHTML = (ticket.messages || []).map(msg => `
-    <div style="margin-bottom:8px;padding:8px 12px;border-radius:8px;${msg.isStaff ? 'background:rgba(61,217,197,0.15);border-left:3px solid var(--accent);' : 'background:rgba(255,255,255,0.05);'}">
-      <div style="font-size:11px;font-weight:600;margin-bottom:4px;">
-        <span style="color:${msg.isStaff ? 'var(--accent)' : 'var(--text)'};">${escapeHtml(msg.sender_display)}</span>
-        ${msg.isStaff ? '<span style="color:var(--amber);margin-left:4px;">[STAFF]</span>' : ''}
-        <span style="color:var(--hint);margin-left:8px;">${timeAgo(msg.timestamp)}</span>
-      </div>
-      <div style="font-size:13px;">${escapeHtml(msg.text)}</div>
-    </div>
-  `).join('');
-  
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  openTicketThreads.add(ticketId);
+  const wrap = document.getElementById(`admin-ticket-thread-${ticketId}`);
+  if (wrap) wrap.classList.remove('hidden');
+  renderTicketMessagesInto(ticketId, 'admin');
 }
 
 async function sendAdminTicketMessage(ticketId) {
@@ -3257,6 +3330,7 @@ async function createDepositTicket(username, amount, contact, description) {
     state.tickets.unshift(ticket);
     saveState();
   }
+  openTicketThreads.add(ticket.id);
   alert('Ticket created. A moderator will respond shortly.');
 }
 
@@ -3282,56 +3356,41 @@ async function loadTickets() {
   }
   
   container.innerHTML = tickets.map(ticket => `
-    <div class="ticket-card" id="ticket-${ticket.id}" style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--surface2);">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div class="ticket-chat-card" id="ticket-${ticket.id}">
+      <div class="ticket-chat-head">
         <div>
-          <div style="font-weight:600;font-size:14px;">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
-          <div style="font-size:11px;color:var(--muted);">By ${escapeHtml(ticket.created_by_display)} · ${timeAgo(ticket.created_at)}</div>
-          <div style="font-size:11px;color:var(--hint);">Status: <span style="color:${ticket.status === 'open' ? 'var(--amber)' : ticket.status === 'resolved' ? 'var(--green)' : 'var(--muted)'};">${ticket.status.toUpperCase()}</span></div>
+          <div class="ticket-chat-title">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
+          <div class="ticket-chat-subtitle">By ${escapeHtml(ticket.created_by_display)} · ${timeAgo(ticket.created_at)}</div>
         </div>
         <div class="btn-row">
-          ${isStaff ? `<button class="btn primary btn-sm" onclick="openTicketChat('${ticket.id}')">Open Chat</button>` : ''}
+          <span class="ticket-status ${ticket.status === 'open' ? 'open' : 'closed'}">${escapeHtml(String(ticket.status || 'open').toUpperCase())}</span>
+          <button class="btn primary btn-sm" onclick="openTicketChat('${ticket.id}')">${openTicketThreads.has(ticket.id) ? 'Refresh Chat' : 'Open Chat'}</button>
           ${ticket.status === 'open' && (ticket.created_by === currentUser?.email || isStaff) ? `<button class="btn btn-sm" onclick="closeTicket('${ticket.id}')">Close</button>` : ''}
         </div>
       </div>
-      ${ticket.status !== 'resolved' ? `
-        <div id="ticket-messages-${ticket.id}" style="max-height:200px;overflow-y:auto;margin-bottom:12px;display:none;">
-          <div class="ticket-messages-inner" id="ticket-messages-inner-${ticket.id}"></div>
-        </div>
+      <div class="ticket-thread ${openTicketThreads.has(ticket.id) ? '' : 'hidden'}" id="user-ticket-thread-${ticket.id}">
+        <div class="ticket-thread-messages" id="user-ticket-messages-${ticket.id}"></div>
         ${ticket.status === 'open' ? `
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="ticket-input-${ticket.id}" placeholder="Type a message..." style="flex:1;" onkeydown="if(event.key==='Enter')sendTicketMessage('${ticket.id}')">
+          <div class="ticket-thread-input">
+            <input type="text" id="ticket-input-${ticket.id}" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendTicketMessage('${ticket.id}')">
             <button class="btn primary btn-sm" onclick="sendTicketMessage('${ticket.id}')">Send</button>
           </div>
-        ` : ''}
-      ` : ''}
+        ` : '<div class="ticket-thread-closed">Ticket closed.</div>'}
+      </div>
     </div>
   `).join('');
+  applyOpenTicketThreads('user');
 }
 
 async function openTicketChat(ticketId) {
   await syncCommunityStateFromServer();
-  const messagesContainer = document.getElementById(`ticket-messages-${ticketId}`);
-  const messagesInner = document.getElementById(`ticket-messages-inner-${ticketId}`);
-  if (!messagesContainer || !messagesInner) return;
-  
-  messagesContainer.style.display = 'block';
-  
-  const ticket = (state.tickets || []).find(t => t.id === ticketId);
-  if (!ticket) return;
-  
-  messagesInner.innerHTML = (ticket.messages || []).map(msg => `
-    <div style="margin-bottom:8px;padding:8px 12px;border-radius:8px;${msg.isStaff ? 'background:rgba(61,217,197,0.15);border-left:3px solid var(--accent);' : 'background:rgba(255,255,255,0.05);'}">
-      <div style="font-size:11px;font-weight:600;margin-bottom:4px;">
-        <span style="color:${msg.isStaff ? 'var(--accent)' : 'var(--text)'};">${escapeHtml(msg.sender_display)}</span>
-        ${msg.isStaff ? '<span style="color:var(--amber);margin-left:4px;">[STAFF]</span>' : ''}
-        <span style="color:var(--hint);margin-left:8px;">${timeAgo(msg.timestamp)}</span>
-      </div>
-      <div style="font-size:13px;">${escapeHtml(msg.text)}</div>
-    </div>
-  `).join('');
-  
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  openTicketThreads.add(ticketId);
+  const supportWrap = document.getElementById(`user-ticket-thread-${ticketId}`);
+  const marketplaceWrap = document.getElementById(`marketplace-ticket-thread-${ticketId}`);
+  if (supportWrap) supportWrap.classList.remove('hidden');
+  if (marketplaceWrap) marketplaceWrap.classList.remove('hidden');
+  renderTicketMessagesInto(ticketId, 'user');
+  renderTicketMessagesInto(ticketId, 'marketplace');
 }
 
 async function sendTicketMessage(ticketId) {
@@ -6101,6 +6160,7 @@ async function submitMarketplaceListing() {
     state.tickets.unshift(ticket);
     saveState();
   }
+  openTicketThreads.add(ticket.id);
   trackUserActivity();
   clearMarketplaceForm();
   renderMarketplace();
@@ -6216,30 +6276,29 @@ function viewMyTickets() {
   }
   
   container.innerHTML = myTickets.map(ticket => `
-    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;background:var(--surface2);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="ticket-chat-card compact" id="marketplace-ticket-${ticket.id}">
+      <div class="ticket-chat-head">
         <div>
-          <div style="font-weight:600;">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
-          <div style="font-size:11px;color:var(--hint);">${timeAgo(ticket.created_at)}</div>
+          <div class="ticket-chat-title">${escapeHtml(ticket.username)} — ${fmtGP(ticket.amount)} GP</div>
+          <div class="ticket-chat-subtitle">${timeAgo(ticket.created_at)} · Ticket with Impact staff</div>
         </div>
-        <span style="font-size:11px;padding:4px 8px;border-radius:4px;background:${ticket.status === 'open' ? 'rgba(255,209,102,0.2)' : 'rgba(61,217,197,0.2)'};color:${ticket.status === 'open' ? 'var(--amber)' : 'var(--accent)'};">${ticket.status.toUpperCase()}</span>
+        <div class="btn-row">
+          <span class="ticket-status ${ticket.status === 'open' ? 'open' : 'closed'}">${escapeHtml(String(ticket.status || 'open').toUpperCase())}</span>
+          <button class="btn primary btn-sm" onclick="openTicketChat('${ticket.id}')">${openTicketThreads.has(ticket.id) ? 'Refresh Chat' : 'Open Chat'}</button>
+        </div>
       </div>
-      ${ticket.status === 'open' ? `
-        <div style="max-height:150px;overflow-y:auto;margin-bottom:8px;font-size:12px;">
-          ${(ticket.messages || []).slice(-5).map(msg => `
-            <div style="margin-bottom:4px;">
-              <span style="color:${msg.isStaff ? 'var(--accent)' : 'var(--muted)'};font-weight:600;">${escapeHtml(msg.sender_display)}:</span>
-              ${escapeHtml(msg.text)}
-            </div>
-          `).join('')}
-        </div>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="myticket-input-${ticket.id}" placeholder="Reply..." style="flex:1;font-size:12px;" onkeydown="if(event.key==='Enter')sendTicketMessage('${ticket.id}')">
-          <button class="btn-sm" onclick="sendTicketMessage('${ticket.id}')">Send</button>
-        </div>
-      ` : '<div style="font-size:12px;color:var(--muted);">Ticket closed.</div>'}
+      <div class="ticket-thread ${openTicketThreads.has(ticket.id) ? '' : 'hidden'}" id="marketplace-ticket-thread-${ticket.id}">
+        <div class="ticket-thread-messages" id="marketplace-ticket-messages-${ticket.id}"></div>
+        ${ticket.status === 'open' ? `
+          <div class="ticket-thread-input">
+            <input type="text" id="ticket-input-${ticket.id}" placeholder="Reply..." onkeydown="if(event.key==='Enter')sendTicketMessage('${ticket.id}')">
+            <button class="btn-sm" onclick="sendTicketMessage('${ticket.id}')">Send</button>
+          </div>
+        ` : '<div class="ticket-thread-closed">Ticket closed.</div>'}
+      </div>
     </div>
   `).join('');
+  applyOpenTicketThreads('marketplace');
 }
 
 async function updateMarketplaceListingStatus(listingId, status) {
@@ -7690,6 +7749,7 @@ function importData() {
 
 function render(){
   validateCurrentUserNotBanned();
+  startCommunityPolling();
   populateSelect(); 
   populatePriceItemSelect();
   renderStats(); 
