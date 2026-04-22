@@ -28,6 +28,7 @@ jobs:
           set sftp:auto-confirm yes
           set ssl:verify-certificate no
           cd "$SFTP_REMOTE_PATH"
+          put -O . .htaccess
           put -O . index.html
           put -O . styles.css
           put -O . app.js
