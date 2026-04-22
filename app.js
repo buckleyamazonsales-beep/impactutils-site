@@ -5935,7 +5935,7 @@ function getMarketplaceCardMarkup(entry, mode = 'active') {
   const statusLabel = entry.status === 'pending' ? 'Pending Approval' : entry.status === 'active' ? 'Live Listing' : entry.status;
   const canModeratePending = mode === 'pending' && isStaffUser();
   const isOwner = isMarketplaceListingOwner(entry);
-  const canModActive = mode === 'active' && (isStaffUser() || isOwner);
+  const canMarkSold = mode === 'active' && (isStaffUser() || isOwner);
   const canCancel = mode === 'active' && isOwner && !isStaffUser();
   const actions = mode === 'pending'
     ? (canModeratePending
@@ -5944,7 +5944,7 @@ function getMarketplaceCardMarkup(entry, mode = 'active') {
       <button class="btn" onclick="modCancelListing('${entry.id}')">Reject</button>
     `
       : (isOwner ? `<button class="btn btn-sm" onclick="cancelMyListing('${entry.id}')">Cancel</button>` : `<span class="marketplace-meta">Awaiting mod review</span>`))
-    : (canModActive
+    : (canMarkSold
       ? `
       <button class="btn primary" onclick="markMarketplaceSold('${entry.id}')">Mark Sold</button>
       ${isStaffUser() ? `<button class="btn" onclick="modCancelListing('${entry.id}')">Cancel</button>` : ''}
@@ -5972,6 +5972,7 @@ function getMarketplaceCardMarkup(entry, mode = 'active') {
           <div style="font-size:12px;">
             <span style="color:var(--hint);">Contact:</span> <span style="color:var(--accent);">${escapeHtml(entry.contact)}</span>
             <span style="color:var(--hint);margin-left:16px;">Listed:</span> <span style="color:var(--muted);">${entry.date}</span>
+            ${!canMarkSold ? `<span style="color:var(--hint);margin-left:16px;">Only the seller or staff can mark this sold.</span>` : ''}
           </div>
           <div class="marketplace-actions">${actions}</div>
         </div>
@@ -5990,7 +5991,7 @@ function getMarketplaceCardMarkup(entry, mode = 'active') {
       </div>
       ${entry.description ? `<div class="marketplace-desc">${entry.description}</div>` : ''}
       <div class="marketplace-footer">
-        <span>Listed ${entry.date}</span>
+        <span>Listed ${entry.date}${!canMarkSold ? ' · Only seller/staff can mark sold' : ''}</span>
         <div class="marketplace-actions">${actions}</div>
       </div>
     </div>
@@ -6336,7 +6337,7 @@ function rejectMarketplaceListing(listingId) {
 function markMarketplaceSold(listingId) {
   const entry = (state.marketplace_listings || []).find(item => item.id === listingId);
   if (!entry || (!isStaffUser() && !isMarketplaceListingOwner(entry))) {
-    alert('Only the seller or staff can update this listing.');
+    alert('Only the seller who posted the listing, or staff, can mark it as sold.');
     return;
   }
   void updateMarketplaceListingStatus(listingId, 'sold');
@@ -6345,7 +6346,7 @@ function markMarketplaceSold(listingId) {
 function removeMarketplaceListing(listingId) {
   const entry = (state.marketplace_listings || []).find(item => item.id === listingId);
   if (!entry || (!isStaffUser() && !isMarketplaceListingOwner(entry))) {
-    alert('Only the seller or staff can update this listing.');
+    alert('Only the seller who posted the listing, or staff, can update this listing.');
     return;
   }
   void updateMarketplaceListingStatus(listingId, 'removed');
