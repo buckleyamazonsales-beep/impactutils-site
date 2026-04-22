@@ -7737,5 +7737,8 @@ document.getElementById('fp-result')?.addEventListener('change', refreshFpStakeP
   syncAuthModal();
   updateOnlineIndicator();
   trackUserActivity();
+  if (!(Number(state.session_start_gp) > 0)) {
+    document.getElementById('gp-modal')?.classList.remove('hidden');
+  }
   render();
 })();
