@@ -7,6 +7,10 @@ function impact_community_state_path() {
     return impact_registry_data_dir() . '/community-state.json';
 }
 
+function impact_community_lock_path() {
+    return impact_registry_data_dir() . '/community-state.lock';
+}
+
 function impact_community_now_iso() {
     return gmdate('Y-m-d H:i');
 }
@@ -123,19 +127,19 @@ function impact_community_load_state() {
 
 function impact_community_merge(callable $mutate) {
     $path = impact_community_state_path();
+    $lockPath = impact_community_lock_path();
     $dir = dirname($path);
     if (!is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
-    $handle = @fopen($path, 'c+');
-    if ($handle === false) {
+    $lockHandle = @fopen($lockPath, 'c+');
+    if ($lockHandle === false) {
         return [false, impact_community_normalize_state([]), null];
     }
 
     try {
-        flock($handle, LOCK_EX);
-        rewind($handle);
-        $raw = stream_get_contents($handle) ?: '';
+        flock($lockHandle, LOCK_EX);
+        $raw = is_file($path) ? (@file_get_contents($path) ?: '') : '';
         $state = impact_community_normalize_state(json_decode($raw ?: '{}', true));
         try {
             $mutate($state);
@@ -147,14 +151,19 @@ function impact_community_merge(callable $mutate) {
         if ($json === false) {
             return [false, $state, 'Could not encode community state.'];
         }
-        ftruncate($handle, 0);
-        rewind($handle);
-        $written = fwrite($handle, $json);
-        fflush($handle);
-        return [$written !== false, $state, $written !== false ? null : 'Could not write community state.'];
+        $tmpPath = $path . '.tmp';
+        $written = @file_put_contents($tmpPath, $json, LOCK_EX);
+        if ($written === false) {
+            return [false, $state, 'Could not write temporary community state file.'];
+        }
+        if (!@rename($tmpPath, $path)) {
+            @unlink($tmpPath);
+            return [false, $state, 'Could not replace community state file.'];
+        }
+        return [true, $state, null];
     } finally {
-        flock($handle, LOCK_UN);
-        fclose($handle);
+        flock($lockHandle, LOCK_UN);
+        fclose($lockHandle);
     }
 }
 
