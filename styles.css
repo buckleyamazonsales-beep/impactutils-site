@@ -68,6 +68,9 @@
   .nav-icon{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
   .nav-item.active .nav-icon{opacity:1;}
   .session-block{padding:16px 20px;border-top:1px solid var(--border);margin-top:auto;background:linear-gradient(180deg, transparent, rgba(255,255,255,0.03));}
+  .sidebar-version-block{padding:14px 20px 18px;border-top:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);}
+  .sidebar-version-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+  .sidebar-version-value{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.04em;word-break:break-word;}
   .session-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
   .compact-block{padding-top:14px;}
   .account-summary{width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),rgba(255,255,255,0.02));text-align:left;color:inherit;cursor:pointer;transition:all 0.18s;}

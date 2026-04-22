@@ -613,6 +613,7 @@ const MARKETPLACE_LISTING_FEE = 500_000_000;
 const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
+const SITE_VERSION = '2026.04.22.2';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -7294,6 +7295,8 @@ function render(){
     renderPanel(active);
   }
   document.documentElement.setAttribute('data-theme', state.theme);
+  const versionEl = document.getElementById('site-version-display');
+  if (versionEl) versionEl.textContent = `v${SITE_VERSION}`;
 }
 
 document.getElementById('gp-input').addEventListener('keydown', e => {
