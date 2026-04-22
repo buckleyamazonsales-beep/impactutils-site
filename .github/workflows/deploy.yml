@@ -1,0 +1,28 @@
+name: Deploy to Namecheap
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Deploy via SFTP
+        uses: Dylan700/sftp-upload-action@latest
+        with:
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: ${{ secrets.SFTP_PORT }}
+          uploads: |
+            ./index.html => ${{ secrets.SFTP_REMOTE_PATH }}/index.html
+            ./styles.css => ${{ secrets.SFTP_REMOTE_PATH }}/styles.css
+            ./app.js => ${{ secrets.SFTP_REMOTE_PATH }}/app.js
+            ./logo.png => ${{ secrets.SFTP_REMOTE_PATH }}/logo.png
+            ./api/ => ${{ secrets.SFTP_REMOTE_PATH }}/api/
