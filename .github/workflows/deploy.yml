@@ -16,6 +16,23 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
+      - name: Stamp deploy version
+        run: |
+          VERSION="$(date -u +'%Y.%m.%d').${GITHUB_RUN_NUMBER}"
+          UPDATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          export VERSION UPDATED_AT
+
+          perl -0pi -e "s#styles\\.css\\?v=[^\"']+#styles.css?v=$ENV{VERSION}#g; s#app\\.js\\?v=[^\"']+#app.js?v=$ENV{VERSION}#g" index.html
+          perl -0pi -e "s/const SITE_VERSION = '[^']+';/const SITE_VERSION = '$ENV{VERSION}';/" app.js
+
+          cat > version.json <<EOF
+          {
+            "version": "${VERSION}",
+            "deployed_asset": "app.js?v=${VERSION}",
+            "updated_at": "${UPDATED_AT}"
+          }
+          EOF
+
       - name: Deploy via SFTP with lftp
         env:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
@@ -28,6 +45,7 @@ jobs:
           set sftp:auto-confirm yes
           set ssl:verify-certificate no
           cd "$SFTP_REMOTE_PATH"
+          mkdir -p api/data
           put -O . .htaccess
           put -O . index.html
           put -O . styles.css
@@ -39,6 +57,7 @@ jobs:
           put -O api api/admin-site-users.php
           put -O api api/admin-stripe-status.php
           put -O api api/billing-status.php
+          put -O api api/community-state.php
           put -O api api/create-checkout-session.php
           put -O api api/create-portal-session.php
           put -O api api/forgot-password.php
@@ -54,5 +73,6 @@ jobs:
           put -O api api/stripe-secrets.php
           put -O api api/stripe-webhook.php
           put -O api api/verify-checkout-session.php
+          put -O api/data api/data/community-state.json
           bye
           EOF
