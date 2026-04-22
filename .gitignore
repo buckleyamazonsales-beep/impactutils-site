@@ -1,0 +1,5 @@
+.env
+node_modules/
+api/lemon-secrets.php
+api/data/site-users.json
+api/data/ratelimit-*.json

@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImpactUtils — impactutils.com</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div class="modal-overlay" id="gp-modal">
+  <div class="modal">
+    <div class="modal-title">How much GP do you have?</div>
+    <div class="modal-sub">session start — bankroll planner</div>
+    <input type="text" id="gp-input" placeholder="e.g. 500m · 1.2b · 80000000">
+    <div class="modal-hint">
+      Accepts: <span>500m · 1.2b · 80000000 · 50k</span><br>
+      Start tracking your flips!
+    </div>
+    <button class="btn primary" id="start-session-btn" style="width:100%;">Start session</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="goal-modal">
+  <div class="modal">
+    <div class="modal-title">Create Custom Goal</div>
+    <div class="modal-sub">Set your own progression target</div>
+    <div class="form-group">
+      <label class="form-label">Goal Name</label>
+      <input type="text" id="goal-name" placeholder="e.g. 50 Zulrah · Max Cooking · 500M Gear">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="goal-desc" placeholder="e.g. Farm Zulrah for unique drops" style="height:60px;resize:none;"></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Target Amount</label>
+        <input type="number" id="goal-target" placeholder="50">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit (kills, xp, gp, etc)</label>
+        <input type="text" id="goal-unit" placeholder="kills">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="goal-category" onchange="syncGoalCategoryFields()">
+          <option value="grind">Grind (Slayer/PvM)</option>
+          <option value="skill">Skill Training</option>
+          <option value="wealth">Wealth Goal</option>
+          <option value="gear">Gear Milestone</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select id="goal-priority">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group hidden" id="goal-price-group">
+      <label class="form-label">Gear GP Price</label>
+      <input type="text" id="goal-price" placeholder="e.g. 250m · 1.4b · 95000000">
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="createCustomGoal()" style="flex:1;">Create Goal</button>
+      <button class="btn" onclick="closeGoalModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="hiscores-modal">
+  <div class="modal">
+    <div class="modal-title">Import Account Stats</div>
+    <div class="modal-sub">Enter a username and let the website build recommended goals from account stats.</div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input type="text" id="username-input" placeholder="e.g. So" />
+    </div>
+    <div id="hiscores-status"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="fetchHiscores()" style="flex:1;">Import Stats</button>
+      <button class="btn" onclick="closeHiscoresModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="auth-modal">
+  <div class="modal">
+    <div class="modal-title" id="auth-modal-title">Create Your Account</div>
+    <div class="modal-sub" id="auth-modal-sub">Set up your account, then verify the email with a 6-digit code before protected features unlock.</div>
+    <div class="form-grid">
+      <div class="form-group" id="auth-display-group">
+        <label class="form-label">Display Name</label>
+        <input type="text" id="auth-display-name" placeholder="e.g. MattB">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="text" id="auth-email" placeholder="e.g. matt@example.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="auth-password" placeholder="Choose a password">
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">6-Digit PIN</label>
+        <input type="password" id="auth-pin" inputmode="numeric" maxlength="6" placeholder="e.g. 482915">
+      </div>
+      <div class="form-group" id="auth-pin-confirm-group">
+        <label class="form-label">Confirm PIN</label>
+        <input type="password" id="auth-pin-confirm" inputmode="numeric" maxlength="6" placeholder="Repeat your PIN">
+      </div>
+    </div>
+    <div id="auth-status" class="profit-preview" style="display:none;margin-top:0;"></div>
+    <label class="form-label" style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer;">
+      <input type="checkbox" id="auth-stay-signed-in" checked style="width:16px;height:16px;">
+      Stay signed in
+    </label>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn primary" onclick="submitAuthForm()" id="auth-submit-btn" style="flex:1;">Create Account</button>
+      <button class="btn" onclick="toggleAuthMode()" id="auth-toggle-btn">Already have an account?</button>
+      <button class="btn" onclick="closeAuthModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="verify-modal">
+  <div class="modal">
+    <div class="modal-title">Verify Your Email</div>
+    <div class="modal-sub">Accounts must be email verified and protected by a 6-digit PIN before posting listings.</div>
+    <div class="profit-preview" id="verify-helper" style="margin-top:0;">
+      Real email sending activates after deployment. Local preview mode can still show the code for testing.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Verification Code</label>
+      <input type="text" id="verify-code" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit code">
+    </div>
+    <div id="verify-status" class="profit-preview" style="display:none;margin-top:0;"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="submitVerificationCode()" style="flex:1;">Verify Email</button>
+      <button class="btn" onclick="resendVerificationCode()">Resend Code</button>
+      <button class="btn" onclick="closeVerifyModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="pricing-modal">
+  <div class="modal pricing-modal">
+    <div class="modal-title">Free vs Pro</div>
+    <div class="modal-sub">Let everyone use the core app with light ads, then charge for the serious grinder layer.</div>
+    <div class="pricing-grid">
+      <div class="pricing-tier" id="pricing-tier-free">
+        <div class="pricing-tier-head">
+          <div>
+            <div class="pricing-tier-name">Free</div>
+            <div class="pricing-tier-price">Ads supported</div>
+          </div>
+          <div class="account-pill">Starter</div>
+        </div>
+        <div class="pricing-tier-copy">Strong enough to hook users without giving away the deeper planning layer.</div>
+        <div class="pricing-tier-list">
+          <div>Flip tracking, history, and basic analysis</div>
+          <div>FP bankroll tracking and auto-sized logging</div>
+          <div>Slayer guide browsing, media, and session logs</div>
+          <div>Marketplace access and basic goals</div>
+          <div>Light ads to support the free tier</div>
+        </div>
+        <button class="btn" onclick="setPlan('free')" id="pricing-free-btn">Stay Free</button>
+      </div>
+      <div class="pricing-tier pricing-tier-pro" id="pricing-tier-pro">
+        <div class="pricing-tier-head">
+          <div>
+            <div class="pricing-tier-name">Pro</div>
+            <div class="pricing-tier-price">$7 · 30-day pass</div>
+          </div>
+          <div class="account-pill">No Ads</div>
+        </div>
+        <div class="pricing-tier-copy">Best for daily grinders who want the tracker making smarter decisions with them.</div>
+        <div class="pricing-tier-list">
+          <div>Timed Pro pass in Lemon Squeezy (set your variant billing there) — not the Founder lifetime tier</div>
+          <div>Ad-free app experience</div>
+          <div>Slayer favorites and private boss notes</div>
+          <div>Advanced FP tools, streak review, and risk layers</div>
+          <div>Unlimited planning depth and smarter recommendations</div>
+          <div>Priority path to future cloud sync and multi-device backup</div>
+        </div>
+        <button class="btn primary" onclick="setPlan('pro')" id="pricing-pro-btn">Upgrade to Pro</button>
+      </div>
+      <div class="pricing-tier" id="pricing-tier-founder">
+        <div class="pricing-tier-head">
+          <div>
+            <div class="pricing-tier-name">Founder</div>
+            <div class="pricing-tier-price">$49 one time</div>
+          </div>
+          <div class="account-pill">Launch</div>
+        </div>
+        <div class="pricing-tier-copy">A one-time supporter tier — full Pro depth without the 30-day Pro window.</div>
+        <div class="pricing-tier-list">
+          <div>Everything in Pro, for the life of this Founder tier (not the timed Pro pass)</div>
+          <div>Founder badge and launch-tier status</div>
+          <div>Processed through Stripe checkout on the live site</div>
+        </div>
+        <button class="btn" onclick="setPlan('founder')" id="pricing-founder-btn">Choose Founder</button>
+      </div>
+    </div>
+    <div id="pricing-status" class="profit-preview" style="display:none;margin-top:18px;"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="closePricingModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="image-lightbox" onclick="closeImageLightbox()">
+  <div class="lightbox" onclick="event.stopPropagation()">
+    <button class="lightbox-close" onclick="closeImageLightbox()" aria-label="Close image viewer">×</button>
+    <img id="lightbox-image" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-top">
+        <div>
+          <div class="sidebar-brand-kicker">impactutils.com</div>
+          <div class="sidebar-brand-title">ImpactUtils</div>
+        </div>
+        <div class="online-indicator" id="online-indicator">
+          <span class="online-dot"></span>
+          <span class="online-count" id="online-count">0</span>
+          <span class="online-label">online</span>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-free-note" id="sidebar-free-note">
+      <div class="sidebar-free-note-title">Free Tier</div>
+      <div class="sidebar-free-note-copy">A few small side ads help keep the core tracker free. They stay out of your forms, guides, and media.</div>
+    </div>
+    <nav class="nav-shell">
+      <div class="nav-group">
+        <div class="nav-section-label">Overview</div>
+        <div class="nav-item" onclick="switchTab('dashboard')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg>Dashboard
+        </div>
+        <div class="nav-item" onclick="switchTab('goals')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Goals
+        </div>
+        <div class="nav-item" onclick="switchTab('stats')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3a1 1 0 011 1v16a1 1 0 11-2 0V4a1 1 0 011-1zm-6 6a1 1 0 011 1v10a1 1 0 11-2 0V10a1 1 0 011-1zm12-3a1 1 0 011 1v13a1 1 0 11-2 0V7a1 1 0 011-1z"/></svg>Stats
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label">Trading</div>
+        <div class="nav-item active" onclick="switchTab('log')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>Log Flip
+        </div>
+        <div class="nav-item" onclick="switchTab('history')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>History
+        </div>
+        <div class="nav-item" onclick="switchTab('analysis')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Analysis
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label">Grind Tools</div>
+        <div class="nav-item" onclick="switchTab('fp')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.761 0-5 1.79-5 4s2.239 4 5 4 5-1.79 5-4-2.239-4-5-4zm0 0V4m0 12v4m8-8h-4M8 12H4"/></svg>FP
+        </div>
+        <div class="nav-item" onclick="switchTab('strategy')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Strategy
+        </div>
+        <div class="nav-item" onclick="switchTab('slayer')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.868v4.264a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Slayer
+        </div>
+        <div class="nav-item" onclick="switchTab('transfers')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3m4-4l-4 4m0 0l4 4"/></svg>Transfers
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-section-label">Community</div>
+        <div class="nav-item" onclick="switchTab('marketplace')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Marketplace
+        </div>
+        <div class="nav-item hidden" id="nav-moderation" onclick="switchTab('moderation')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Mod Desk
+        </div>
+        <div class="nav-item hidden" id="nav-admin" onclick="switchTab('admin')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>Admin
+        </div>
+      </div>
+    </nav>
+    <div class="session-block">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="session-label">This session</div>
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</div>
+      </div>
+      <div class="session-value green" id="sb-profit">+0 GP</div>
+      <div class="session-row"><span class="slabel">Started with</span><span class="sval" id="sb-start">—</span></div>
+      <div class="session-row"><span class="slabel">Now approx.</span><span class="sval" id="sb-now">—</span></div>
+      <div class="sdivider"></div>
+      <div class="session-row"><span class="slabel">All-time profit</span><span class="sval green" id="sb-alltime">0 GP</span></div>
+      <div class="sdivider"></div>
+      <button class="btn-sm" onclick="newSession()">↺ New session</button>
+    </div>
+    <div class="session-block compact-block" style="border-top:1px solid var(--border);">
+      <button class="account-summary" id="sidebar-account-toggle" onclick="toggleSidebarAccount()" type="button">
+        <div class="account-summary-main">
+          <div class="session-label">Account</div>
+          <div class="account-summary-row">
+            <div class="account-pill" id="auth-status-pill">Guest Mode</div>
+            <div class="plan-pill plan-pill-inline" id="plan-status-pill">Free</div>
+          </div>
+          <div class="account-name" id="auth-user-name">Not signed in</div>
+          <div class="account-meta account-meta-compact" id="auth-user-meta">Create an account to post listings and unlock your saved identity.</div>
+        </div>
+        <span class="account-toggle-icon" id="sidebar-account-chevron">+</span>
+      </button>
+      <div class="account-panel hidden" id="sidebar-account-panel">
+        <div class="account-panel-card">
+          <div class="account-plan-block">
+            <div class="account-plan-header">
+              <span class="account-plan-eyebrow">Subscription</span>
+              <span class="account-plan-actions">
+                <button type="button" class="btn-sm account-plan-cta hidden" id="account-billing-portal-btn" onclick="openBillingPortal()">Billing portal</button>
+                <button type="button" class="btn-sm account-plan-cta" onclick="openPricingModal()">View plans</button>
+              </span>
+            </div>
+            <p class="account-plan-description" id="plan-status-copy">Core tracking stays open. Premium planning, notes, and advanced analytics unlock in Pro.</p>
+          </div>
+          <div id="user-points-display" style="display:none;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:8px;text-align:center;">
+            <div style="font-size:11px;color:var(--muted);">Reward Points</div>
+            <div style="font-size:16px;font-weight:700;color:var(--accent);" id="user-points-value">0</div>
+            <div style="font-size:10px;color:var(--muted);" id="user-points-next">1000 for free premium</div>
+          </div>
+          <div id="user-trust-display" style="display:none;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:8px;text-align:center;"></div>
+          <div class="btn-row" id="auth-buttons-row">
+            <button class="btn-sm" id="auth-primary-btn" onclick="openAuthModal('signup')">Create Account</button>
+            <button class="btn-sm" id="auth-secondary-btn" onclick="openAuthModal('login')">Sign In</button>
+            <button class="btn-sm hidden" id="auth-verify-btn" onclick="openVerifyModal()">Verify Email</button>
+          </div>
+          <div class="btn-row" id="auth-logged-in-row" style="display:none;">
+            <button class="btn-sm" onclick="logoutUser()">Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="session-block" style="border-top:1px solid var(--border);" id="sidebar-ad-block">
+      <div class="session-label">Sponsor</div>
+      <div class="ad-slot ad-slot-sidebar" id="ad-slot-sidebar">
+        <div class="ad-slot-content"></div>
+        <div class="ad-slot-actions">
+          <button class="btn-sm" onclick="rotateAdSlot('sidebar')">Next Sponsor</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="panel-dashboard" class="panel">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-subtitle">Your full grind board with profit, bankroll, goals, guided bosses, and launch-ready upgrade prompts</div>
+      </div>
+      <div class="inline-notice" id="dashboard-free-notice">
+        <div class="inline-notice-title">Free plan</div>
+        <div class="inline-notice-copy">This version is supported by a few light side ads. They stay out of the way, and Pro removes them completely.</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Combined Profit</div><div class="stat-card-value green" id="dash-combined-profit">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">FP Bankroll + Items</div><div class="stat-card-value amber" id="dash-bankroll">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Active Goals</div><div class="stat-card-value" id="dash-active-goals">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Supported Bosses</div><div class="stat-card-value" id="dash-guide-bosses">0</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">Trend Snapshot</div>
+          <div class="dashboard-chart-grid">
+            <div class="dashboard-chart-card">
+              <div class="dashboard-chart-label">Combined Profit Trend</div>
+              <div id="chart-combined-trend"></div>
+            </div>
+            <div class="dashboard-chart-card">
+              <div class="dashboard-chart-label">FP Session Trend</div>
+              <div id="chart-fp-trend"></div>
+            </div>
+            <div class="dashboard-chart-card">
+              <div class="dashboard-chart-label">Slayer GP Trend</div>
+              <div id="chart-slayer-trend"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Upgrade to Pro</div>
+          <div class="dashboard-pro-card">
+            <div class="dashboard-pro-price">$7 · 30-day Pro pass</div>
+            <div class="dashboard-pro-copy" id="dashboard-pro-copy">Ad-free plus the premium layers users actually pay for.</div>
+            <div class="guide-pill" id="dashboard-plan-pill" style="margin-bottom:14px;">Free Plan Active</div>
+            <div class="dashboard-pro-list">
+              <div>Unlimited goals and roadmap planning</div>
+              <div>Advanced charts and trend history</div>
+              <div>Smart next-step recommendations</div>
+              <div>Future cloud sync and multi-device backup</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn primary" onclick="handleDashboardUpgradeClick()" id="dashboard-upgrade-btn">Upgrade to Pro</button>
+              <button class="btn" onclick="openPricingModal('founder')" id="dashboard-founder-btn">Founder Offer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">Right Now</div>
+          <div id="dashboard-focus-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Cloud & Sync</div>
+          <div class="profit-preview" style="margin-top:0;">Local export/import works today. Cloud sync and multi-device save are queued as backend-backed Pro features so users can keep data across machines safely.</div>
+          <div class="dashboard-cloud-placeholder">
+            <div class="dashboard-cloud-pill">Coming Soon</div>
+            <div>Email login, secure cloud backup, multi-device sync, and account restores.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ad-slot ad-slot-inline" id="ad-slot-dashboard">
+        <div class="ad-slot-content"></div>
+        <div class="ad-slot-actions">
+          <button class="btn" onclick="rotateAdSlot('dashboard')">Next Sponsor</button>
+        </div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">Tonight's Plan</div>
+          <div id="dashboard-plan-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Account Momentum</div>
+          <div id="dashboard-momentum-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-log" class="panel active">
+      <div class="page-header">
+        <div class="page-title">Log a flip</div>
+        <div class="page-subtitle" id="log-date"></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Today's profit</div><div class="stat-card-value green" id="s-today">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Total trades</div><div class="stat-card-value" id="s-trades">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Best ROI</div><div class="stat-card-value green" id="s-best">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">GP/Hour</div><div class="stat-card-value amber" id="s-gphour">—</div></div>
+      </div>
+
+      <div class="card" id="favorites-card" style="display:none;">
+        <div class="card-title">⭐ Favorite items — quick flip</div>
+        <div id="favorites-list" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Record flip</div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Item</label>
+          <div style="display:flex;gap:8px;">
+            <select id="item-select" onchange="onItemChange()" style="flex:1;"></select>
+            <button class="btn-sm" onclick="toggleFavorite()" id="fav-toggle-btn">⭐</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Buy price (each)</label><input type="number" id="buy-price" placeholder="10000000" oninput="calcProfit()"></div>
+          <div class="form-group"><label class="form-label">Sell price (each)</label><input type="number" id="sell-price" placeholder="14000000" oninput="calcProfit()"></div>
+        </div>
+        <div class="form-group" style="margin-top:12px;margin-bottom:4px;">
+          <label class="form-label">Quantity</label>
+          <input type="number" id="qty" value="1" oninput="calcProfit()">
+        </div>
+        <div class="profit-preview" id="profit-preview">Enter prices above to preview profit.</div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="logTrade()">Record flip (PENDING)</button>
+          <button class="btn" onclick="toggleAddItem()">+ New item</button>
+        </div>
+        
+        <div class="add-item-form" id="add-item-form">
+          <div class="add-item-title">Add custom item</div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Item name</label><input type="text" id="new-item-name" placeholder="e.g. Twisted Bow"></div>
+            <div class="form-group"><label class="form-label">Suggested buy price</label><input type="text" id="new-item-buy" placeholder="e.g. 9b"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Suggested sell price</label><input type="text" id="new-item-sell" placeholder="e.g. 11b"></div>
+          </div>
+          <button class="btn" onclick="addItem()">Add item</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Selected item info</div>
+        <div id="suggested-info" class="profit-preview" style="margin:0;color:var(--muted);">Select an item above to see stats.</div>
+      </div>
+    </div>
+
+    <div id="panel-goals" class="panel">
+      <div class="page-header">
+        <div class="page-title">Goals 🎯</div>
+        <div class="page-subtitle">Track progression to max & gear up</div>
+      </div>
+
+      <div class="stat-grid" style="margin-bottom:22px;">
+        <div class="stat-card"><div class="stat-card-label">Tracked Gear Value</div><div class="stat-card-value amber" id="goals-gear-total">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Owned Gear Value</div><div class="stat-card-value green" id="goals-gear-owned">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">XP Goals Active</div><div class="stat-card-value" id="goals-xp-count">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Item Goals Active</div><div class="stat-card-value" id="goals-item-count">0</div></div>
+      </div>
+
+      <div class="goal-actions">
+        <button class="btn primary" onclick="openGoalModalWithCategory('skill')">+ XP Goal</button>
+        <button class="btn" onclick="openGoalModalWithCategory('gear')">+ Item Goal</button>
+        <button class="btn" onclick="openHiscoresModal()">📊 Refresh Suggestions</button>
+      </div>
+
+      <div id="suggested-goals-container" style="margin-bottom:20px;"></div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">Community Price Desk</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Item</label>
+              <select id="price-item-select" onchange="renderCommunityPriceDesk()"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your Price</label>
+              <input type="text" id="price-item-input" placeholder="e.g. 1b">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" onclick="submitCommunityPrice()">Submit Price</button>
+          </div>
+          <div class="profit-preview" id="price-submit-copy">Submit a community price to help everyone see a stronger item median.</div>
+        </div>
+
+        <div class="card premium-locked-card" id="price-pro-card">
+          <div class="card-title">Pro Price Intel</div>
+          <div class="locked-pill" id="price-trust-pill">Pro only</div>
+          <div id="price-analytics-body">
+            <div class="locked-copy">Pro unlocks median trend charts, confidence bands, and trust rank based on how consistently your submissions stay near the community middle.</div>
+            <div class="locked-list">
+              <div>Median trend chart for each tracked item</div>
+              <div>Confidence score and submission depth</div>
+              <div>Trust rank that rewards consistent middle-range pricing</div>
+            </div>
+            <button class="btn primary" onclick="openPricingModal('pro')">Unlock Pro Price Intel</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="active-goals-container"></div>
+
+      <div class="card">
+        <div class="card-title">Gear Roadmap</div>
+        <div id="gear-roadmap-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Completed Goals</div>
+        <div id="completed-goals-list"></div>
+      </div>
+    </div>
+
+    <div id="panel-history" class="panel">
+      <div class="page-header">
+        <div class="page-title">Trade history</div>
+        <div class="page-subtitle">All recorded flips, most recent first</div>
+      </div>
+      <div class="card" style="padding:14px 18px;">
+        <div class="form-grid" style="margin-bottom:0;">
+          <div class="form-group">
+            <label class="form-label">Sort by</label>
+            <select id="history-sort-by" onchange="renderHistory()">
+              <option value="date" selected>Date</option>
+              <option value="profit">Profit</option>
+              <option value="roi">ROI</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Order</label>
+            <select id="history-sort-dir" onchange="renderHistory()">
+              <option value="desc" selected>Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="history-table-wrap"><div class="empty">No trades logged yet.</div></div>
+      </div>
+    </div>
+
+    <div id="panel-analysis" class="panel">
+      <div class="page-header">
+        <div class="page-title">Analysis</div>
+        <div class="page-subtitle">Performance metrics by item</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Completed flips</div><div class="stat-card-value" id="a-completed">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Win rate</div><div class="stat-card-value green" id="a-winrate">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Avg GP/hour</div><div class="stat-card-value green" id="a-gphour">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Avg ROI</div><div class="stat-card-value amber" id="a-avgroi">—</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card">
+          <div class="card-title">Best performers (all time)</div>
+          <div id="analysis-list"><div class="empty">Log trades to see rankings.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fastest flips</div>
+          <div id="velocity-list"><div class="empty">Complete flips to see velocity.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-stats" class="panel">
+      <div class="page-header">
+        <div class="page-title">Stats</div>
+        <div class="page-subtitle">One place for your full tracker overview, bankroll snapshot, and reset controls</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Combined Profit</div><div class="stat-card-value green" id="stats-combined-profit">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Saved FP Bankroll</div><div class="stat-card-value amber" id="stats-fp-bankroll">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Held FP Items</div><div class="stat-card-value" id="stats-fp-items">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Goals Completed</div><div class="stat-card-value" id="stats-goals-completed">0</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">Tracker Breakdown</div>
+          <div id="stats-breakdown-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Reset Controls</div>
+          <div class="profit-preview" style="margin-top:0;">Use these carefully. Each reset only clears the selected area and recalculates the totals immediately.</div>
+          <div class="stats-reset-grid">
+            <button class="btn" onclick="resetFpStats()">Reset FP Stats</button>
+            <button class="btn" onclick="resetSlayerStats()">Reset Slayer Stats</button>
+            <button class="btn" onclick="resetTransferStats()">Reset Transfer Stats</button>
+            <button class="btn" onclick="resetAllTrackerStats()">Reset All Tracker Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-fp" class="panel">
+      <div class="page-header">
+        <div class="page-title">Flower Poker</div>
+        <div class="page-subtitle">Track bankroll, auto-sized stakes, session results, and guardrails</div>
+      </div>
+
+      <div class="premium-banner" id="fp-plan-banner">
+        <div>
+          <div class="premium-banner-title">FP stays playable on Free</div>
+          <div class="premium-banner-copy">Basic bankroll logging remains open. Pro is where the heavier analysis, simulator, and deeper risk-planning tools live.</div>
+        </div>
+        <button class="btn" onclick="openPricingModal('pro')">See Pro FP</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">FP Net (all time)</div><div class="stat-card-value amber" id="ops-fp-total">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Saved Bankroll</div><div class="stat-card-value" id="fp-bankroll-total">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Current Streak</div><div class="stat-card-value" id="fp-streak-display">Neutral</div></div>
+        <div class="stat-card"><div class="stat-card-label">Combined Profit</div><div class="stat-card-value green" id="ops-combined-total">0 GP</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">🌸 Log Flower Poker</div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Initial/Base Stake</label><input type="text" id="fp-base-stake" placeholder="e.g. 100m"></div>
+            <div class="form-group"><label class="form-label">Result</label>
+              <select id="fp-result">
+                <option value="win">Win</option>
+                <option value="loss">Loss</option>
+                <option value="custom">Custom net</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">FP bankroll</label><input type="text" id="fp-bankroll" placeholder="e.g. 3b"></div>
+            <div class="form-group"><label class="form-label">Next Stake (Auto)</label><input type="text" id="fp-next-stake" placeholder="Auto from base stake" disabled></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Stop-loss (session)</label><input type="text" id="fp-stoploss" placeholder="e.g. 600m"></div>
+            <div class="form-group"><label class="form-label">Take-profit (session)</label><input type="text" id="fp-takeprofit" placeholder="e.g. 900m"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Net GP (only for custom)</label><input type="text" id="fp-net" placeholder="e.g. 120m or -200m"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="suggestFpStake()">Auto-Pick Best FP Plan • Pro</button>
+            <button class="btn" onclick="saveFpGuardrails()">Save Guardrails</button>
+            <button class="btn primary" onclick="logFpSession()">Log FP Session</button>
+          </div>
+          <div class="profit-preview" id="fp-hint">Tip: In a fair 50/50, the best default is usually flat bankroll-based sizing. The Pro helper can auto-pick the strongest method for the current FP bankroll and cap the stake for you.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">FP Session Feed</div>
+          <div id="fp-log-list"><div class="empty">No FP sessions logged yet.</div></div>
+        </div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">FP Item Ledger</div>
+          <div class="form-group"><label class="form-label">Search Held Items</label><input type="text" id="fp-item-search" placeholder="Search held item name..." oninput="renderRspsSections()"></div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Item Name</label><input type="text" id="fp-item-name" placeholder="e.g. Twisted Bow"></div>
+            <div class="form-group"><label class="form-label">Buy Value</label><input type="text" id="fp-item-buy" placeholder="e.g. 1.2b"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Notes</label><input type="text" id="fp-item-note" placeholder="e.g. won in FP session"></div>
+          <div class="btn-row">
+            <button class="btn primary" onclick="addFpItem()">Add FP Item</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Held FP Items</div>
+          <div id="fp-item-list"><div class="empty">No FP-held items tracked yet.</div></div>
+        </div>
+
+        <div class="card premium-locked-card" id="fp-pro-card">
+          <div class="card-title">Pro FP Tools</div>
+          <div class="locked-pill">Pro only</div>
+          <div class="locked-copy">These are the features that make FP feel like a premium assistant instead of just a logger.</div>
+          <div class="locked-list">
+            <div>Stake ladder simulation before you enter a session</div>
+            <div>Variance and streak analytics over longer samples</div>
+            <div>Preset profiles for rebuild, balanced, and lock-profit play</div>
+            <div>Deeper guardrail prompts when bankroll swings get ugly</div>
+          </div>
+          <button class="btn primary" onclick="openPricingModal('pro')">Unlock Pro FP</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-strategy" class="panel">
+      <div class="page-header">
+        <div class="page-title">Strategy</div>
+        <div class="page-subtitle">Keep planning, custom rules, and bankroll pathing separate from the FP logger</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Slayer GP Share</div><div class="stat-card-value green" id="strategy-slayer-share">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">FP / Flip Share</div><div class="stat-card-value amber" id="strategy-fp-share">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Selected Profile</div><div class="stat-card-value" id="strategy-profile-label">Balanced</div></div>
+        <div class="stat-card"><div class="stat-card-label">Recommended Base Stake</div><div class="stat-card-value" id="strategy-recommended-stake">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎯 Bankroll Planner</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Current Bank</label><input type="text" id="plan-current-bank" placeholder="e.g. 3b"></div>
+          <div class="form-group"><label class="form-label">Target Bank</label><input type="text" id="plan-target-bank" placeholder="e.g. 9b"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Strategy Profile</label>
+            <select id="plan-risk" onchange="onStrategyProfileChange()">
+              <option value="conservative">Conservative (fixed fractional)</option>
+              <option value="balanced" selected>Balanced (fixed fractional)</option>
+              <option value="aggressive">Aggressive (fixed fractional)</option>
+              <option value="online_fractional">Online: Fractional bankroll model</option>
+              <option value="online_antimartingale">Online: Anti-martingale model</option>
+              <option value="online_fractional_kelly">Online: Fractional Kelly-style model</option>
+              <option value="custom_tiered">Custom tiered strategy</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Avg Daily GP (optional)</label><input type="text" id="plan-daily-gp" placeholder="e.g. 350m"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Custom Tier Rules</label>
+          <input type="text" id="plan-custom-rules" placeholder="e.g. 0-3b:300m;3b-6b:500m;6b-9b:800m">
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="saveCustomStrategy()">Save Custom Rules</button>
+          <button class="btn primary" onclick="generatePlan()">Suggest Method</button>
+        </div>
+        <div class="profit-preview" id="plan-output">Enter current + target bank to get a strategy and FP stake suggestion.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎰 Gamble Unlock Rule</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Every Bankroll</label><input type="text" id="rule-bankroll-step" placeholder="e.g. 2b"></div>
+          <div class="form-group"><label class="form-label">Unlock Gamble Amount</label><input type="text" id="rule-gamble-amount" placeholder="e.g. 500m"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="saveBankrollRule()">Save Bankroll Rule</button>
+        </div>
+        <div class="profit-preview" id="bankroll-rule-preview">Set a bankroll rule like every 2b tracked bankroll unlocks 500m of gambling allocation.</div>
+      </div>
+    </div>
+
+    <div id="panel-slayer" class="panel">
+      <div class="page-header">
+        <div class="page-title">Slayer</div>
+        <div class="page-subtitle">Dedicated Slayer GP logging with a much broader task list and task-specific notes</div>
+      </div>
+
+      <div class="premium-banner" id="slayer-plan-banner">
+        <div>
+          <div class="premium-banner-title">Guides are free. Personal planning is Pro.</div>
+          <div class="premium-banner-copy">Free members can open up to 5 Slayer bosses per day. Pro unlocks unlimited browsing, favorites, saved notes, and the more personal organization layer.</div>
+        </div>
+        <button class="btn" onclick="openPricingModal('pro')">See Pro Slayer</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Slayer GP (all time)</div><div class="stat-card-value green" id="ops-slayer-total">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Sessions Logged</div><div class="stat-card-value" id="slayer-session-count">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Avg GP / Hour</div><div class="stat-card-value amber" id="slayer-avg-gph">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Best Task</div><div class="stat-card-value" id="slayer-best-task">—</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">🗡️ Log Slayer GP</div>
+          <div class="profit-preview" id="slayer-guide-summary" style="margin-top:0;">
+            This section only includes bosses with verified wiki guide coverage.
+          </div>
+          <div class="profit-preview" id="slayer-access-note" style="margin-top:0;">
+            Free members can open 5 Slayer bosses per day. Pro members have unlimited access.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Find task</label>
+            <input type="text" id="slayer-task-search" placeholder="Search task name..." oninput="filterSlayerTasks()">
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Task</label>
+              <select id="slayer-task" onchange="onSlayerTaskChange()"></select>
+            </div>
+            <div class="form-group"><label class="form-label">GP earned</label><input type="text" id="slayer-gp" placeholder="e.g. 120m"></div>
+          </div>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn" onclick="toggleSlayerFavorite()">Toggle Favorite</button>
+            <div id="slayer-favorite-state" class="guide-pill">Not Favorited</div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Minutes spent</label><input type="number" id="slayer-minutes" placeholder="e.g. 45"></div>
+            <div class="form-group"><label class="form-label">Account</label>
+              <select id="slayer-account">
+                <option value="main" selected>Main</option>
+                <option value="alt">Alt</option>
+              </select>
+            </div>
+          </div>
+          <div class="profit-preview" id="slayer-guide">Choose a task to see route and tips.</div>
+          <div class="form-group">
+            <label class="form-label">Personal Boss Notes</label>
+            <textarea id="slayer-note" placeholder="Write your own setup, route, inventory, or prayer notes for this boss..." style="min-height:110px;resize:vertical;"></textarea>
+          </div>
+          <div class="btn-row" style="margin-top:0;">
+            <button class="btn" onclick="saveSlayerNote()">Save Note</button>
+          </div>
+          <div class="card hidden" id="slayer-boss-media-card" style="margin-top:12px;margin-bottom:0;">
+            <div class="card-title">Boss Guide Media</div>
+            <div id="slayer-boss-media"></div>
+          </div>
+          <div class="btn-row"><button class="btn primary" onclick="logSlayerGP()">Log Slayer Session</button></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Slayer Sessions</div>
+          <div id="slayer-log-list"><div class="empty">No slayer sessions logged yet.</div></div>
+        </div>
+
+        <div class="card premium-locked-card" id="slayer-pro-card">
+          <div class="card-title">Pro Slayer Layer</div>
+          <div class="locked-pill">Pro only</div>
+          <div class="locked-copy">The paid layer is about making the tracker remember your bossing habits and preferences.</div>
+          <div class="locked-list">
+            <div>Favorite bosses for quicker repeat routing</div>
+            <div>Private notes for prayers, routes, and inventory reminders</div>
+            <div>Upcoming profitability filters and session ranking</div>
+            <div>Longer-term planning tied into your gear roadmap</div>
+          </div>
+          <button class="btn primary" onclick="openPricingModal('pro')">Unlock Pro Slayer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-transfers" class="panel">
+      <div class="page-header">
+        <div class="page-title">Transfers</div>
+        <div class="page-subtitle">Move bankroll between accounts without burying it inside the RSPS tools pile</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Transferred GP</div><div class="stat-card-value" id="ops-transfer-total">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Transfer Count</div><div class="stat-card-value" id="transfer-count">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Largest Transfer</div><div class="stat-card-value" id="transfer-largest">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Latest Route</div><div class="stat-card-value" id="transfer-latest-route">—</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">🔁 Account Transfers</div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">From</label>
+              <select id="transfer-from">
+                <option value="main">Main</option>
+                <option value="alt">Alt</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">To</label>
+              <select id="transfer-to">
+                <option value="alt">Alt</option>
+                <option value="main">Main</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Amount</label><input type="text" id="transfer-amount" placeholder="e.g. 250m"></div>
+            <div class="form-group"><label class="form-label">Reason</label><input type="text" id="transfer-note" placeholder="e.g. FP bankroll top-up"></div>
+          </div>
+          <div class="btn-row"><button class="btn primary" onclick="logTransfer()">Record Transfer</button></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Transfers</div>
+          <div id="transfer-log-list"><div class="empty">No transfers logged yet.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-marketplace" class="panel">
+      <div class="page-header">
+        <div class="page-title">Username Marketplace</div>
+        <div class="page-subtitle">Buy & sell rare usernames • 500M listing fee • powered by impactutils.com</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-card-label">Active Listings</div><div class="stat-card-value" id="mp-active-count">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Pending Approval</div><div class="stat-card-value amber" id="mp-pending-count">0</div></div>
+        <div class="stat-card"><div class="stat-card-label">Total Market Value</div><div class="stat-card-value green" id="mp-total-value">0 GP</div></div>
+        <div class="stat-card"><div class="stat-card-label">Your Listings</div><div class="stat-card-value" id="mp-your-listings">0</div></div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-title">📝 List a Username</div>
+          <div class="profit-preview" style="margin-top:0;">
+            <strong>500M GP listing fee required.</strong> Your listing will be pending until an Impact MOD verifies your deposit via chat ticket.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="mp-username" placeholder="Enter the username you're selling">
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Asking Price</label>
+              <input type="text" id="mp-price" placeholder="e.g. 2b · 750m">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Your Contact</label>
+              <input type="text" id="mp-contact" placeholder="Discord, IGN, etc.">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description (optional)</label>
+            <textarea id="mp-description" placeholder="Why is this name valuable? Special features, rare letters, etc..." style="min-height:80px;resize:vertical;"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" onclick="submitMarketplaceListing()">Submit & Verify Deposit</button>
+            <button class="btn" onclick="clearMarketplaceForm()">Clear Form</button>
+          </div>
+          <div id="my-tickets-list" style="margin-top:16px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💡 Listing Tips</div>
+          <div class="marketplace-tips">
+            <div class="tip-item">
+              <div class="tip-icon">💰</div>
+              <div class="tip-content">
+                <div class="tip-title">Price Competitively</div>
+                <div class="tip-text">Research similar names before setting your price</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">📱</div>
+              <div class="tip-content">
+                <div class="tip-title">Stay Available</div>
+                <div class="tip-text">Provide active contact info so buyers can reach you</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">⚡</div>
+              <div class="tip-content">
+                <div class="tip-title">Quick Response</div>
+                <div class="tip-text">Fast replies lead to faster sales</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">✅</div>
+              <div class="tip-content">
+                <div class="tip-title">Use Impact MODS as Middleman</div>
+                <div class="tip-text">Always use an Impact MOD to middleman your transaction — never trade directly</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">🎫</div>
+              <div class="tip-content">
+                <div class="tip-title">Start a Deposit Ticket</div>
+                <div class="tip-text">Create a ticket to verify your 500M listing fee with Impact MODS before your listing goes live</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ad-slot ad-slot-inline" id="ad-slot-marketplace">
+        <div class="ad-slot-content"></div>
+        <div class="ad-slot-actions">
+          <button class="btn" onclick="rotateAdSlot('marketplace')">Next Sponsor</button>
+        </div>
+      </div>
+
+      <div class="card" id="mp-pending-card" style="border-color:rgba(255,209,102,0.3);background:linear-gradient(180deg,rgba(255,209,102,0.05),rgba(255,255,255,0.02));">
+        <div class="card-title">⏳ Your Pending Listings</div>
+        <div id="mp-my-pending-list" style="margin-bottom:12px;"></div>
+        <div class="empty" id="mp-my-pending-empty">No pending listings</div>
+      </div>
+
+      <div class="card" style="border-color:rgba(61,217,197,0.25);">
+        <div class="card-title">🏪 Username Marketplace</div>
+        <div class="profit-preview" style="margin-bottom:16px;font-size:12px;">
+          <strong>Buy & Sell Rare Usernames</strong> — All transactions are middlemanned by <span style="color:var(--accent);">Impact MODS</span> to ensure safety.
+        </div>
+        <div class="form-grid" style="margin-bottom:16px;">
+          <div class="form-group">
+            <input type="text" id="mp-search" placeholder="Search usernames..." oninput="renderMarketplaceListings()">
+          </div>
+          <div class="form-group">
+            <select id="mp-sort" onchange="renderMarketplaceListings()">
+              <option value="recent">Most Recent</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="alpha">Alphabetical</option>
+            </select>
+          </div>
+        </div>
+        <div id="mp-listings-grid" style="max-height:600px;overflow-y:auto;">
+          <div class="empty">No usernames listed yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-admin" class="panel">
+      <div class="page-header">
+        <div class="page-title">🔒 Admin Panel</div>
+        <div class="page-subtitle">Full control — user management, all user data, billing, marketplace, and site settings.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 User Management</div>
+        <div id="admin-user-list" style="margin-bottom:16px;"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="renderAdminUserList()">Refresh Users</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 All User Purchases (Stripe)</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          View all users who purchased Pro/Founder. Syncs from Stripe.
+        </div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button class="btn primary" onclick="loadAdminPurchases()">Load Purchases</button>
+        </div>
+        <div id="admin-purchases-list" class="profit-preview" style="margin-top:12px;">Click "Load Purchases" to see all paid users.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 All User Flips (Local Data)</div>
+        <div id="admin-flips-stats" style="margin-bottom:12px;"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="exportAllUserFlips()">Export All Flips CSV</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💎 All User Community Prices</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          See every price submission from all users with their trust scores.
+        </div>
+        <div id="admin-prices-list" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛒 All Marketplace Listings</div>
+        <div id="admin-marketplace-list" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👤 User Lookup</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Email or display name</label>
+            <input type="text" id="admin-profile-search" placeholder="player@email.com or DisplayName" onkeydown="if(event.key==='Enter')adminLookupProfile()">
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <button type="button" class="btn primary" onclick="adminLookupProfile()" style="width:100%;">Search</button>
+          </div>
+        </div>
+        <div id="admin-profile-result" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 All Members</div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button type="button" class="btn primary" onclick="renderAdminAllMembers()">Refresh Members</button>
+        </div>
+        <div id="admin-all-members-list" style="max-height:500px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 All User Activity</div>
+        <div class="form-group">
+          <label class="form-label">Filter by user email</label>
+          <input type="text" id="admin-activity-filter" placeholder="Leave empty to see all activity" oninput="renderAdminActivity()">
+        </div>
+        <div id="admin-activity-list" style="max-height:500px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⛔ Ban Management</div>
+        <div class="form-group">
+          <label class="form-label">Ban email</label>
+          <input type="text" id="admin-ban-email" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason</label>
+          <input type="text" id="admin-ban-reason" placeholder="Reason for ban">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="adminBanUser()">Ban User</button>
+          <button class="btn" onclick="adminUnbanUser()">Unban User</button>
+        </div>
+        <div id="admin-ban-result" style="margin-top:12px;"></div>
+        <div id="admin-banned-list" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎫 Deposit Tickets</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          Live chat with users who want to make a marketplace listing. Verify their GP deposit, then approve their post.
+        </div>
+        <div id="admin-ticket-list" style="margin-bottom:16px;"></div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button type="button" class="btn primary" onclick="loadAdminTickets()">Refresh Tickets</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ All Pending Marketplace Listings</div>
+        <div id="admin-pending-listings"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Stripe Configuration</div>
+        <div id="admin-lemon-webhook-display" class="profit-preview" style="margin-top:0;"></div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button type="button" class="btn primary" onclick="checkAdminStripeStatus()">Verify Stripe Config</button>
+        </div>
+        <div id="admin-lemon-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔑 Registry API Key</div>
+        <div class="form-grid" style="margin-bottom:14px;">
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label">Admin API key (matches IMPACT_ADMIN_API_KEY in stripe-secrets.php)</label>
+            <input type="password" id="admin-registry-key" placeholder="Paste key, then Save" autocomplete="off">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn primary" onclick="saveAdminRegistryKey()">Save Key</button>
+          <button type="button" class="btn" onclick="refreshAdminRegistry()">Refresh Server Users</button>
+        </div>
+        <div id="admin-registry-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
+        <div id="admin-registry-table" class="profit-preview" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div id="panel-moderation" class="panel">
+      <div class="page-header">
+        <div class="page-title">🛡️ Mod Desk</div>
+        <div class="page-subtitle">Moderator tools — view all user activity, manage bans, and approve marketplace listings.</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">👤 User Lookup</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Email or display name</label>
+            <input type="text" id="mod-profile-search" placeholder="player@email.com or DisplayName" onkeydown="if(event.key==='Enter')modDeskLookupProfile()">
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <button type="button" class="btn primary" onclick="modDeskLookupProfile()" style="width:100%;">Search</button>
+          </div>
+        </div>
+        <div id="mod-profile-result" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 All Members</div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button type="button" class="btn primary" onclick="renderAllMembers()">Refresh List</button>
+        </div>
+        <div id="mod-all-members-list" style="max-height:500px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛠️ Reset User Stats</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          Staff can reset a registered user’s tracker data without exposing email addresses in the moderation UI.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registered user</label>
+          <select id="mod-user-select"></select>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="modResetSelectedUserStats('all')">Reset All</button>
+          <button class="btn" onclick="modResetSelectedUserStats('fp')">Reset FP</button>
+          <button class="btn" onclick="modResetSelectedUserStats('slayer')">Reset Slayer</button>
+          <button class="btn" onclick="modResetSelectedUserStats('trades')">Reset Flips</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="modResetSelectedUserStats('transfers')">Reset Transfers</button>
+          <button class="btn" onclick="modResetSelectedUserStats('goals')">Reset Goals</button>
+          <button class="btn" onclick="modResetSelectedUserStats('prices')">Reset Prices</button>
+          <button class="btn" onclick="modResetSelectedUserStats('marketplace')">Reset Marketplace</button>
+        </div>
+        <div id="mod-reset-result" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 All User Activity</div>
+        <div class="form-group">
+          <label class="form-label">Filter by user email</label>
+          <input type="text" id="mod-activity-filter" placeholder="Leave empty to see all activity" oninput="renderModActivity()">
+        </div>
+        <div id="mod-activity-list" style="max-height:500px;overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⛔ Ban Management</div>
+        <div class="form-group">
+          <label class="form-label">Registered user</label>
+          <select id="mod-ban-user-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason</label>
+          <input type="text" id="mod-ban-reason" placeholder="Reason for ban">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="modDeskBanUser()">Ban User</button>
+          <button class="btn" onclick="modDeskUnbanUser()">Unban User</button>
+        </div>
+        <div id="mod-ban-result" style="margin-top:12px;"></div>
+        <div id="mod-banned-list" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏆 Reward Points Management</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          Manage user reward points. Users earn 1 point per community price submission. 1000 points = 14 days free premium.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registered user</label>
+          <select id="mod-points-user-select"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Points to give</label>
+            <input type="number" id="mod-points-give" value="10" min="1" style="width:100%;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Points to take</label>
+            <input type="number" id="mod-points-take" value="10" min="1" style="width:100%;">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="modDeskGivePoints()">Give Points</button>
+          <button class="btn" onclick="modDeskTakePoints()">Take Points</button>
+        </div>
+        <div id="mod-points-result" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ Pending Marketplace Listings</div>
+        <div id="mod-pending-listings"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎫 Deposit Tickets</div>
+        <div class="profit-preview" style="margin-bottom:12px;">
+          Live chat with users who want to make a marketplace listing. Verify their GP deposit, then approve their post.
+        </div>
+        <div id="ticket-list" style="margin-bottom:16px;"></div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button type="button" class="btn primary" onclick="loadTickets()">Refresh Tickets</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+         
+<div class="site-footer">
+  <div class="footer-disclaimer">
+    <strong>Disclaimer:</strong> ImpactUtils.com has no partnership, affiliation, or endorsement from Impact.gg or Jagex Ltd. We do not condone any illegal activities or violations of game rules. Please familiarize yourself with all applicable rules and regulations.
+  </div>
+</div>
+
+<!--
+  Netlify (especially custom domain): uncomment so billing + email use serverless functions:
+  <script>window.IMPACT_BILLING_FUNCTIONS_BASE='/.netlify/functions';window.IMPACT_VERIFICATION_ENDPOINT='/.netlify/functions/send-verification-email';</script>
+-->
+<script src="./app.js"></script>
+</body>
+</html>
