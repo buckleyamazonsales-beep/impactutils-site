@@ -13,17 +13,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Deploy via SFTP
-        uses: Dylan700/sftp-upload-action@latest
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT }}
-          uploads: |
-            ./index.html => ${{ secrets.SFTP_REMOTE_PATH }}/index.html
-            ./styles.css => ${{ secrets.SFTP_REMOTE_PATH }}/styles.css
-            ./app.js => ${{ secrets.SFTP_REMOTE_PATH }}/app.js
-            ./version.json => ${{ secrets.SFTP_REMOTE_PATH }}/version.json
-            ./logo.png => ${{ secrets.SFTP_REMOTE_PATH }}/logo.png
-            ./api/ => ${{ secrets.SFTP_REMOTE_PATH }}/api/
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy via SFTP with lftp
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_REMOTE_PATH: ${{ secrets.SFTP_REMOTE_PATH }}
+        run: |
+          lftp -u "$SFTP_USERNAME","$SFTP_PASSWORD" "sftp://$SFTP_HOST:$SFTP_PORT" <<EOF
+          set sftp:auto-confirm yes
+          set ssl:verify-certificate no
+          cd "$SFTP_REMOTE_PATH"
+          put -O "$SFTP_REMOTE_PATH" index.html
+          put -O "$SFTP_REMOTE_PATH" styles.css
+          put -O "$SFTP_REMOTE_PATH" app.js
+          put -O "$SFTP_REMOTE_PATH" version.json
+          put -O "$SFTP_REMOTE_PATH" logo.png
+          mirror -R api "$SFTP_REMOTE_PATH/api"
+          bye
+          EOF
