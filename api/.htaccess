@@ -1,0 +1,14 @@
+# Pretty URLs so the app can call /api/create-checkout-session (matches Netlify paths).
+# Requires Apache AllowOverride + mod_rewrite (standard on cPanel).
+
+RewriteEngine On
+
+RewriteRule ^create-checkout-session$ create-checkout-session.php [L]
+RewriteRule ^verify-checkout-session$ verify-checkout-session.php [L]
+RewriteRule ^recover-billing$ recover-billing.php [L]
+RewriteRule ^billing-status$ billing-status.php [L]
+RewriteRule ^create-portal-session$ create-portal-session.php [L]
+RewriteRule ^stripe-webhook$ stripe-webhook.php [L]
+RewriteRule ^site-user-register$ site-user-register.php [L]
+RewriteRule ^admin-site-users$ admin-site-users.php [L]
+RewriteRule ^admin-stripe-status$ admin-stripe-status.php [L]
