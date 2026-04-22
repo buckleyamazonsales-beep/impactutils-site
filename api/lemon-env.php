@@ -87,11 +87,39 @@ function impact_api_begin_json($allowedAfterOptions = ['POST']) {
 }
 
 function impact_registry_data_dir() {
-    $dir = __DIR__ . '/data';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0755, true);
+    static $resolved = null;
+    if ($resolved !== null) {
+        return $resolved;
     }
-    return $dir;
+
+    $candidates = [
+        __DIR__ . '/data',
+        rtrim((string)sys_get_temp_dir(), '/\\') . '/impactutils-api-data',
+    ];
+
+    foreach ($candidates as $dir) {
+        if ($dir === '') {
+            continue;
+        }
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        if (!is_dir($dir)) {
+            continue;
+        }
+
+        $probe = rtrim($dir, '/\\') . '/.write-test';
+        $wrote = @file_put_contents($probe, 'ok');
+        if ($wrote === false) {
+            continue;
+        }
+        @unlink($probe);
+        $resolved = $dir;
+        return $resolved;
+    }
+
+    $resolved = __DIR__ . '/data';
+    return $resolved;
 }
 
 function impact_registry_users_path() {
