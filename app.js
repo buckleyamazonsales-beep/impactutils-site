@@ -668,6 +668,72 @@ function getBillingFunctionsBase() {
   return '/api';
 }
 
+function getCommunityApiBase() {
+  if (typeof window === 'undefined') return '';
+  if (window.IMPACT_COMMUNITY_API_BASE) {
+    return String(window.IMPACT_COMMUNITY_API_BASE).replace(/\/$/, '');
+  }
+  if (window.location.protocol === 'file:') return '';
+  const h = (window.location.hostname || '').toLowerCase();
+  if (h === 'localhost' || h === '127.0.0.1') return '';
+  if (/\.netlify\.app$/i.test(h)) return '';
+  return '/api';
+}
+
+function applyCommunityStatePayload(data = {}) {
+  if (!state) return;
+  if (Array.isArray(data.marketplace_listings)) {
+    state.marketplace_listings = data.marketplace_listings;
+  }
+  if (Array.isArray(data.tickets)) {
+    state.tickets = data.tickets;
+  }
+  normalizeState();
+  saveState();
+}
+
+async function syncCommunityStateFromServer() {
+  const base = getCommunityApiBase();
+  if (!base) return false;
+  try {
+    const res = await fetch(`${base}/community-state`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || `Community sync failed (${res.status}).`);
+    }
+    applyCommunityStatePayload(data);
+    return true;
+  } catch (e) {
+    console.warn('syncCommunityStateFromServer', e);
+    return false;
+  }
+}
+
+async function postCommunityAction(action, payload = {}) {
+  const base = getCommunityApiBase();
+  if (!base) {
+    throw new Error('Shared community API unavailable.');
+  }
+  const res = await fetch(`${base}/community-state`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `Community request failed (${res.status}).`);
+  }
+  applyCommunityStatePayload(data);
+  return data;
+}
+
+function canUseLocalCommunityFallback() {
+  return !getCommunityApiBase();
+}
+
 async function notifySiteUserRegistry(event) {
   if (typeof window === 'undefined') return;
   const base = getBillingFunctionsBase();
@@ -914,18 +980,7 @@ async function openBillingPortal() {
 }
 
 function handleDashboardUpgradeClick() {
-  const stripePortal = Boolean(
-    state?.subscription?.stripeCustomerId && state?.subscription?.billing === 'stripe'
-  );
-  if (isProUser() && stripePortal) {
-    void openBillingPortal();
-    return;
-  }
-  if (isProUser()) {
-    openPricingModal('pro');
-    return;
-  }
-  void setPlan('pro');
+  openPricingModal('pro');
 }
 let state, sessionGP = 0, sessionProfit = 0, currentUser = null, authMode = 'signup';
 let adRotationTimer = null;
@@ -933,7 +988,7 @@ let adRotationTimer = null;
 function getCurrentUser() {
   return currentUser;
 }
-const AD_ROTATION_MS = 30000;
+const AD_ROTATION_MS = 10000;
 const ROTATING_ADS = {
   sidebar: [
     { tag:'Free tier ad', meta:'Impact utils', title:'Advertise on ImpactUtils', copy:'Small sponsor placements live on the side so the main workflow stays clean for everyone.', cta:'Visit impactutils.com', href:'https://impactutils.com' },
@@ -957,11 +1012,11 @@ function generateVerificationCode() {
 }
 
 function sanitizePin(pin) {
-  return String(pin || '').replace(/\D/g, '').slice(0, 6);
+  return String(pin || '').trim().slice(0, 32);
 }
 
 function isValidPin(pin) {
-  return /^\d{6}$/.test(sanitizePin(pin));
+  return /^[A-Za-z0-9._\-!@#$%^&*()+=]{4,32}$/.test(sanitizePin(pin));
 }
 
 function isHostedMode() {
@@ -1042,12 +1097,15 @@ let currentPlayerData = null;
 
 function parseGP(s) {
   if (!s && s !== 0) return 0;
-  s = s.toString().toLowerCase().replace(/,/g,'').trim();
-  if (s.endsWith('t')) return Math.round(parseFloat(s)*1e12);
-  if (s.endsWith('b')) return Math.round(parseFloat(s)*1e9);
-  if (s.endsWith('m')) return Math.round(parseFloat(s)*1e6);
-  if (s.endsWith('k')) return Math.round(parseFloat(s)*1e3);
-  return Math.round(parseFloat(s))||0;
+  const raw = String(s).toLowerCase().replace(/,/g, '').trim();
+  if (!raw) return 0;
+  const match = raw.match(/^(-?\d+(?:\.\d+)?)([mbt]?)$/);
+  if (!match) return 0;
+  const value = parseFloat(match[1]);
+  if (!Number.isFinite(value)) return 0;
+  const suffix = match[2];
+  const multiplier = suffix === 't' ? 1e12 : suffix === 'b' ? 1e9 : suffix === 'm' ? 1e6 : 1;
+  return Math.round(value * multiplier) || 0;
 }
 
 function fmtGP(n) {
@@ -1136,6 +1194,15 @@ function normalizeAuthUserRecord(user) {
     ...user,
     display_name: user.display_name || user.email || 'User',
     pin: sanitizePin(user.pin || ''),
+    linked_accounts: Array.isArray(user.linked_accounts) && user.linked_accounts.length
+      ? user.linked_accounts.map(account => ({
+          id: String(account.id || generateId()),
+          label: String(account.label || 'Account').trim().slice(0, 40) || 'Account'
+        }))
+      : [
+          { id: 'main', label: 'Main' },
+          { id: 'alt', label: 'Alt' }
+        ],
     is_admin: Boolean(user.is_admin),
     is_moderator: Boolean(user.is_moderator),
     points: Number(user.points) || 0,
@@ -1147,6 +1214,108 @@ function normalizeAuthUserRecord(user) {
 
 function normalizeAuthUsers(users) {
   return Array.isArray(users) ? users.map(normalizeAuthUserRecord) : [];
+}
+
+function getCurrentLinkedAccounts() {
+  if (!currentUser) return [];
+  const accounts = Array.isArray(currentUser.linked_accounts) ? currentUser.linked_accounts : [];
+  return accounts.length ? accounts : [{ id: 'main', label: 'Main' }, { id: 'alt', label: 'Alt' }];
+}
+
+function setLinkedAccountStatus(message = '', tone = 'muted') {
+  const el = document.getElementById('linked-account-status');
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = tone === 'error' ? 'var(--red)' : tone === 'success' ? 'var(--green)' : 'var(--muted)';
+}
+
+function populateTransferAccountSelects() {
+  const fromSel = document.getElementById('transfer-from');
+  const toSel = document.getElementById('transfer-to');
+  if (!fromSel || !toSel) return;
+
+  const accounts = getCurrentLinkedAccounts();
+  if (!accounts.length) {
+    fromSel.innerHTML = '<option value="">Sign in first</option>';
+    toSel.innerHTML = '<option value="">Sign in first</option>';
+    return;
+  }
+
+  const priorFrom = fromSel.value;
+  const priorTo = toSel.value;
+  const options = accounts.map(account => `<option value="${escapeHtml(account.id)}">${escapeHtml(account.label)}</option>`).join('');
+  fromSel.innerHTML = options;
+  toSel.innerHTML = options;
+
+  fromSel.value = accounts.some(account => account.id === priorFrom) ? priorFrom : (accounts[0]?.id || '');
+  toSel.value = accounts.some(account => account.id === priorTo) ? priorTo : (accounts[1]?.id || accounts[0]?.id || '');
+
+  if (fromSel.value === toSel.value && accounts.length > 1) {
+    const alternate = accounts.find(account => account.id !== fromSel.value);
+    if (alternate) toSel.value = alternate.id;
+  }
+}
+
+function renderLinkedAccountsEditor() {
+  const container = document.getElementById('linked-account-list');
+  if (!container) return;
+
+  if (!currentUser?.email) {
+    container.innerHTML = '<div class="empty">Sign in to manage profile accounts.</div>';
+    populateTransferAccountSelects();
+    return;
+  }
+
+  const accounts = getCurrentLinkedAccounts();
+  container.innerHTML = accounts.map(account => `
+    <div class="item-row" style="flex-wrap:wrap;gap:8px;">
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:600;">${escapeHtml(account.label)}</div>
+        <div style="font-size:11px;color:var(--muted);">Profile account</div>
+      </div>
+      <button class="btn-sm" type="button" onclick="removeLinkedAccount('${account.id}')" ${accounts.length <= 1 ? 'disabled' : ''}>Delete</button>
+    </div>
+  `).join('');
+  populateTransferAccountSelects();
+}
+
+function addLinkedAccount() {
+  if (!ensureRegisteredUser('manage profile accounts')) return;
+  const input = document.getElementById('linked-account-name');
+  const label = String(input?.value || '').trim().slice(0, 40);
+  if (!label) {
+    setLinkedAccountStatus('Enter an account name first.', 'error');
+    return;
+  }
+  const accounts = getCurrentLinkedAccounts();
+  if (accounts.some(account => account.label.toLowerCase() === label.toLowerCase())) {
+    setLinkedAccountStatus('That profile account name already exists.', 'error');
+    return;
+  }
+  saveCurrentUserRecord(normalizeAuthUserRecord({
+    ...currentUser,
+    linked_accounts: [...accounts, { id: generateId(), label }]
+  }));
+  if (input) input.value = '';
+  setLinkedAccountStatus(`Added ${label}.`, 'success');
+  renderLinkedAccountsEditor();
+}
+
+function removeLinkedAccount(accountId) {
+  if (!ensureRegisteredUser('manage profile accounts')) return;
+  const accounts = getCurrentLinkedAccounts();
+  if (accounts.length <= 1) {
+    setLinkedAccountStatus('Keep at least one profile account.', 'error');
+    return;
+  }
+  const nextAccounts = accounts.filter(account => account.id !== accountId);
+  const removed = accounts.find(account => account.id === accountId);
+  saveCurrentUserRecord(normalizeAuthUserRecord({
+    ...currentUser,
+    linked_accounts: nextAccounts
+  }));
+  setLinkedAccountStatus(removed ? `Removed ${removed.label}.` : 'Profile account removed.', 'success');
+  renderLinkedAccountsEditor();
 }
 
 function readAuthUsersFromLocalStorage() {
@@ -1355,9 +1524,9 @@ function renderAllMembers() {
   });
   
   state.marketplace_listings.forEach(l => {
-    if (l.seller) {
-      const key = String(l.seller || '').toLowerCase();
-      const existing = membersMap.get(key) || { email: key, display: l.seller, authId: '', plan: 'free', verified: false, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0, registeredAt: '' };
+    if (l.seller_email) {
+      const key = String(l.seller_email || '').toLowerCase();
+      const existing = membersMap.get(key) || { email: key, display: l.seller || l.seller_email, authId: '', plan: 'free', verified: false, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0, registeredAt: '' };
       existing.listings++;
       existing.lastSeen = Math.max(existing.lastSeen, new Date(l.date).getTime());
       membersMap.set(key, existing);
@@ -1467,6 +1636,11 @@ async function persistAuthUsersEverywhere(users) {
 function findAuthUser(email) {
   const normalized = String(email || '').trim().toLowerCase();
   return loadAuthUsers().find(user => String(user.email || '').toLowerCase() === normalized) || null;
+}
+
+function findAuthUserByDisplayName(displayName) {
+  const normalized = String(displayName || '').trim().toLowerCase();
+  return loadAuthUsers().find(user => String(user.display_name || '').trim().toLowerCase() === normalized) || null;
 }
 
 function findAuthUserById(userId) {
@@ -1932,7 +2106,7 @@ function adminViewUserDetails(email) {
   const userSlayer = state.slayer_logs.filter(l => String(l.actor_email || '').toLowerCase() === emailLower);
   const userFp = state.fp_logs.filter(l => String(l.actor_email || '').toLowerCase() === emailLower);
   const userPrices = state.community_prices.filter(p => String(p.user_email || '').toLowerCase() === emailLower);
-  const userListings = state.marketplace_listings.filter(l => String(l.seller || '').toLowerCase() === emailLower);
+  const userListings = state.marketplace_listings.filter(l => String(l.seller_email || '').toLowerCase() === emailLower);
   
   const totalFlipProfit = userFlips.reduce((sum, t) => sum + (Number(t.profit) || 0), 0);
   const totalSlayerGp = userSlayer.reduce((sum, l) => sum + (Number(l.gp) || 0), 0);
@@ -2195,7 +2369,7 @@ function renderAdminMarketplace() {
         ${listings.map(l => `<tr style="border-bottom:1px solid var(--border);">
           <td style="padding:8px 6px;font-weight:600;">${escapeHtml(l.username)}</td>
           <td style="padding:8px 6px;color:var(--green);font-weight:600;">${fmtGP(Number(l.price)||0)}</td>
-          <td style="padding:8px 6px;word-break:break-all;">${escapeHtml(l.seller || 'Unknown')}</td>
+          <td style="padding:8px 6px;word-break:break-all;">${escapeHtml(l.seller || l.seller_email || 'Unknown')}</td>
           <td style="padding:8px 6px;"><span class="badge ${l.status==='active'?'green':l.status==='pending'?'amber':'muted'}">${escapeHtml(l.status)}</span></td>
           <td style="padding:8px 6px;white-space:nowrap;">${escapeHtml(l.date || '')}</td>
         </tr>`).join('')}
@@ -2244,7 +2418,7 @@ function adminLookupProfile() {
   const userSlayer = (state.slayer_logs || []).filter(l => String(l.actor_email || '').toLowerCase() === email);
   const userFp = (state.fp_logs || []).filter(l => String(l.actor_email || '').toLowerCase() === email);
   const userPrices = (state.community_prices || []).filter(p => String(p.user_email || '').toLowerCase() === email);
-  const userListings = (state.marketplace_listings || []).filter(l => String(l.seller || '').toLowerCase() === email);
+  const userListings = (state.marketplace_listings || []).filter(l => String(l.seller_email || '').toLowerCase() === email);
   
   const totalProfit = userTrades.filter(t => t.status === 'completed').reduce((sum, t) => sum + (Number(t.profit) || 0), 0);
   const authUsers = loadAuthUsers();
@@ -2377,11 +2551,12 @@ function renderAdminAllMembers() {
   });
   
   state.marketplace_listings.forEach(l => {
-    if (l.seller) {
-      const existing = membersMap.get(l.seller) || { email: l.seller, display: l.seller, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0 };
+    if (l.seller_email) {
+      const key = String(l.seller_email || '').toLowerCase();
+      const existing = membersMap.get(key) || { email: key, display: l.seller || l.seller_email, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0 };
       existing.listings++;
       existing.lastSeen = Math.max(existing.lastSeen, new Date(l.date).getTime());
-      membersMap.set(l.seller, existing);
+      membersMap.set(key, existing);
     }
   });
   
@@ -2503,10 +2678,10 @@ function renderAdminActivity() {
   });
   
   state.marketplace_listings.forEach(l => {
-    if (!filter || String(l.seller || '').toLowerCase().includes(filter)) {
+    if (!filter || String(l.seller_email || '').toLowerCase().includes(filter)) {
       allActivity.push({
         type: 'listing',
-        email: l.seller || 'Anonymous',
+        email: l.seller_email || 'Anonymous',
         display: l.seller || 'Unknown',
         date: l.date,
         details: `Listing: ${l.username} - ${fmtGP(Number(l.price)||0)} GP (${l.status})`,
@@ -2601,7 +2776,8 @@ function renderAdminBannedList() {
   </div>`;
 }
 
-function loadAdminTickets() {
+async function loadAdminTickets() {
+  await syncCommunityStateFromServer();
   if (!isAdminUser()) return;
   const container = document.getElementById('admin-ticket-list');
   if (!container) return;
@@ -2636,7 +2812,8 @@ function loadAdminTickets() {
   `).join('');
 }
 
-function openAdminTicketChat(ticketId) {
+async function openAdminTicketChat(ticketId) {
+  await syncCommunityStateFromServer();
   const messagesContainer = document.getElementById(`admin-ticket-messages-${ticketId}`);
   const messagesInner = document.getElementById(`admin-ticket-messages-inner-${ticketId}`);
   if (!messagesContainer || !messagesInner) return;
@@ -2660,7 +2837,7 @@ function openAdminTicketChat(ticketId) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function sendAdminTicketMessage(ticketId) {
+async function sendAdminTicketMessage(ticketId) {
   const input = document.getElementById(`admin-ticket-input-${ticketId}`);
   if (!input) return;
   
@@ -2670,28 +2847,45 @@ function sendAdminTicketMessage(ticketId) {
   const ticket = (state.tickets || []).find(t => t.id === ticketId);
   if (!ticket || ticket.status === 'resolved') return;
   
-  ticket.messages.push({
+  const message = {
     id: generateId(),
     sender: currentUser.email,
     sender_display: currentUser.display_name || currentUser.email,
     text,
     timestamp: Date.now(),
     isStaff: true
-  });
-  
+  };
+
   input.value = '';
-  saveState();
-  openAdminTicketChat(ticketId);
+  try {
+    await postCommunityAction('add_ticket_message', { ticket_id: ticketId, message });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not send the staff ticket reply.');
+      return;
+    }
+    ticket.messages.push(message);
+    saveState();
+  }
+  await openAdminTicketChat(ticketId);
 }
 
-function closeAdminTicket(ticketId) {
+async function closeAdminTicket(ticketId) {
   const ticket = (state.tickets || []).find(t => t.id === ticketId);
   if (!ticket) return;
   
   if (!confirm('Close this ticket?')) return;
   
-  ticket.status = 'resolved';
-  saveState();
+  try {
+    await postCommunityAction('update_ticket_status', { ticket_id: ticketId, status: 'resolved' });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not close the ticket.');
+      return;
+    }
+    ticket.status = 'resolved';
+    saveState();
+  }
   loadAdminTickets();
 }
 
@@ -2721,11 +2915,19 @@ function renderAdminPendingListings() {
   </div>`).join('');
 }
 
-function adminApproveListing(id) {
+async function adminApproveListing(id) {
   const entry = (state.marketplace_listings || []).find(l => l.id === id);
   if (entry) {
-    entry.status = 'active';
-    saveState();
+    try {
+      await postCommunityAction('update_listing_status', { listing_id: id, status: 'active' });
+    } catch (e) {
+      if (!canUseLocalCommunityFallback()) {
+        alert(e.message || 'Could not approve the listing.');
+        return;
+      }
+      entry.status = 'active';
+      saveState();
+    }
     renderAdminPendingListings();
     alert('Listing approved and now live.');
   }
@@ -2793,10 +2995,10 @@ function renderModActivity() {
   });
   
   state.marketplace_listings.forEach(l => {
-    if (!filter || String(l.seller || '').toLowerCase().includes(filter)) {
+    if (!filter || String(l.seller_email || '').toLowerCase().includes(filter)) {
       allActivity.push({
         type: 'listing',
-        email: l.seller || 'Anonymous',
+        email: l.seller_email || 'Anonymous',
         display: l.seller || 'Unknown',
         date: l.date,
         details: `Listing: ${l.username} - ${fmtGP(Number(l.price)||0)} GP (${l.status})`,
@@ -2978,27 +3180,43 @@ function renderModPendingListings() {
   </div>`).join('');
 }
 
-function modApproveListing(id) {
+async function modApproveListing(id) {
   const entry = (state.marketplace_listings || []).find(l => l.id === id);
   if (entry) {
-    entry.status = 'active';
-    saveState();
+    try {
+      await postCommunityAction('update_listing_status', { listing_id: id, status: 'active' });
+    } catch (e) {
+      if (!canUseLocalCommunityFallback()) {
+        alert(e.message || 'Could not approve the listing.');
+        return;
+      }
+      entry.status = 'active';
+      saveState();
+    }
     renderModPendingListings();
     alert('Listing approved and now live.');
   }
 }
 
-function modRejectListing(id) {
+async function modRejectListing(id) {
   const entry = (state.marketplace_listings || []).find(l => l.id === id);
   if (entry) {
-    entry.status = 'rejected';
-    saveState();
+    try {
+      await postCommunityAction('update_listing_status', { listing_id: id, status: 'rejected' });
+    } catch (e) {
+      if (!canUseLocalCommunityFallback()) {
+        alert(e.message || 'Could not reject the listing.');
+        return;
+      }
+      entry.status = 'rejected';
+      saveState();
+    }
     renderModPendingListings();
     alert('Listing rejected.');
   }
 }
 
-function createDepositTicket(username, amount, contact, description) {
+async function createDepositTicket(username, amount, contact, description) {
   const currentUser = getCurrentUser();
   if (!currentUser?.email) {
     alert('Sign in to create a deposit ticket.');
@@ -3026,13 +3244,22 @@ function createDepositTicket(username, amount, contact, description) {
     }]
   };
   
-  state.tickets = state.tickets || [];
-  state.tickets.unshift(ticket);
-  saveState();
+  try {
+    await postCommunityAction('create_ticket', { ticket });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not create the deposit ticket.');
+      return;
+    }
+    state.tickets = state.tickets || [];
+    state.tickets.unshift(ticket);
+    saveState();
+  }
   alert('Ticket created. A moderator will respond shortly.');
 }
 
-function loadTickets() {
+async function loadTickets() {
+  await syncCommunityStateFromServer();
   const container = document.getElementById('ticket-list');
   if (!container) return;
   
@@ -3080,7 +3307,8 @@ function loadTickets() {
   `).join('');
 }
 
-function openTicketChat(ticketId) {
+async function openTicketChat(ticketId) {
+  await syncCommunityStateFromServer();
   const messagesContainer = document.getElementById(`ticket-messages-${ticketId}`);
   const messagesInner = document.getElementById(`ticket-messages-inner-${ticketId}`);
   if (!messagesContainer || !messagesInner) return;
@@ -3104,7 +3332,7 @@ function openTicketChat(ticketId) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function sendTicketMessage(ticketId) {
+async function sendTicketMessage(ticketId) {
   const input = document.getElementById(`ticket-input-${ticketId}`);
   if (!input) return;
   
@@ -3123,48 +3351,74 @@ function sendTicketMessage(ticketId) {
     return;
   }
   
-  ticket.messages.push({
+  const message = {
     id: generateId(),
     sender: currentUser.email,
     sender_display: currentUser.display_name || currentUser.email,
     text,
     timestamp: Date.now(),
     isStaff: isStaffUser()
-  });
-  
+  };
+
   input.value = '';
-  saveState();
-  openTicketChat(ticketId);
+  try {
+    await postCommunityAction('add_ticket_message', { ticket_id: ticketId, message });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not send the ticket reply.');
+      return;
+    }
+    ticket.messages.push(message);
+    saveState();
+  }
+  await openTicketChat(ticketId);
 }
 
-function closeTicket(ticketId) {
+async function closeTicket(ticketId) {
   const ticket = (state.tickets || []).find(t => t.id === ticketId);
   if (!ticket) return;
   
   if (!confirm('Close this ticket? This will mark it as resolved.')) return;
   
-  ticket.status = 'resolved';
-  saveState();
+  try {
+    await postCommunityAction('update_ticket_status', { ticket_id: ticketId, status: 'resolved' });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not close the ticket.');
+      return;
+    }
+    ticket.status = 'resolved';
+    saveState();
+  }
   loadTickets();
 }
 
-function resolveTicket(ticketId) {
+async function resolveTicket(ticketId) {
   const ticket = (state.tickets || []).find(t => t.id === ticketId);
   if (!ticket) return;
   
   const currentUser = getCurrentUser();
-  
-  ticket.messages.push({
+
+  const message = {
     id: generateId(),
     sender: currentUser.email,
     sender_display: currentUser.display_name || currentUser.email,
     text: '✅ Ticket resolved by staff. Your marketplace listing has been verified and approved.',
     timestamp: Date.now(),
     isStaff: true
-  });
-  
-  ticket.status = 'resolved';
-  saveState();
+  };
+
+  try {
+    await postCommunityAction('update_ticket_status', { ticket_id: ticketId, status: 'resolved', message });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not resolve the ticket.');
+      return;
+    }
+    ticket.messages.push(message);
+    ticket.status = 'resolved';
+    saveState();
+  }
   loadTickets();
   alert('Ticket resolved and user notified.');
 }
@@ -3628,13 +3882,12 @@ function toggleAuthMode() {
 async function submitAuthForm() {
   const displayName = document.getElementById('auth-display-name')?.value.trim() || '';
   const email = document.getElementById('auth-email')?.value.trim().toLowerCase() || '';
-  const password = document.getElementById('auth-password')?.value || '';
   const pin = sanitizePin(document.getElementById('auth-pin')?.value || '');
   const pinConfirm = sanitizePin(document.getElementById('auth-pin-confirm')?.value || '');
   const staySignedIn = document.getElementById('auth-stay-signed-in')?.checked ?? true;
 
-  if (!email || !password || !pin) {
-    setAuthStatus('Enter your email, password, and 6-digit PIN.', 'error');
+  if (!email || !pin) {
+    setAuthStatus('Enter your email and access PIN.', 'error');
     return;
   }
 
@@ -3646,8 +3899,12 @@ async function submitAuthForm() {
       setAuthStatus('Add a display name for your public account.', 'error');
       return;
     }
+    if (findAuthUserByDisplayName(displayName)) {
+      setAuthStatus('That display name is already taken. Choose a unique one.', 'error');
+      return;
+    }
     if (!isValidPin(pin)) {
-      setAuthStatus('Your PIN must be exactly 6 digits.', 'error');
+      setAuthStatus('Your PIN must be 4-32 letters, numbers, or symbols with no spaces.', 'error');
       return;
     }
     if (pin !== pinConfirm) {
@@ -3666,8 +3923,11 @@ async function submitAuthForm() {
       id: generateId(),
       display_name: displayName,
       email,
-      password,
       pin,
+      linked_accounts: [
+        { id: 'main', label: 'Main' },
+        { id: 'alt', label: 'Alt' }
+      ],
       email_verified: false,
       is_admin: false,
       is_moderator: false,
@@ -3697,20 +3957,20 @@ async function submitAuthForm() {
     return;
   }
 
-  if (!existing || existing.password !== password) {
-    setAuthStatus('Email or password did not match.', 'error');
+  if (!existing) {
+    setAuthStatus('That email does not have an account yet.', 'error');
     return;
   }
 
   if (!isValidPin(existing.pin)) {
     if (!isValidPin(pin)) {
-      setAuthStatus('This older account needs a new 6-digit PIN before it can sign in.', 'error');
+      setAuthStatus('This older account needs a new access PIN before it can sign in.', 'error');
       return;
     }
     existing.pin = pin;
     saveCurrentUserRecord(existing);
   } else if (existing.pin !== pin) {
-    setAuthStatus('Email, password, or PIN did not match.', 'error');
+    setAuthStatus('Email or PIN did not match.', 'error');
     return;
   }
 
@@ -4106,6 +4366,13 @@ function requireProFeature(featureName) {
   return false;
 }
 
+function ensureRegisteredUser(actionText = 'use this feature') {
+  if (currentUser?.email) return true;
+  openAuthModal('signup');
+  setAuthStatus(`Create or sign in to ${actionText}.`, 'error');
+  return false;
+}
+
 function normalizeState(){
   state.items = state.items || JSON.parse(JSON.stringify(DEFAULT_ITEMS));
   state.trades = Array.isArray(state.trades) ? state.trades : [];
@@ -4122,11 +4389,13 @@ function normalizeState(){
   state.fp_logs = Array.isArray(state.fp_logs) ? state.fp_logs : [];
   state.transfers = Array.isArray(state.transfers) ? state.transfers : [];
   state.marketplace_listings = Array.isArray(state.marketplace_listings) ? state.marketplace_listings : [];
-  state.strategy_settings = state.strategy_settings || {selected:'balanced', custom_rules:'0-3b:300m;3b-6b:500m;6b-9b:800m', bankroll_step:2000000000, gamble_unlock:500000000};
+  state.strategy_settings = state.strategy_settings || {selected:'balanced', custom_rules:'0-3b:300m;3b-6b:500m;6b-9b:800m', bankroll_step:2000000000, gamble_unlock:500000000, custom_slayer_share:60, custom_fp_share:40};
   if (!state.strategy_settings.selected) state.strategy_settings.selected = 'balanced';
   if (!state.strategy_settings.custom_rules) state.strategy_settings.custom_rules = '0-3b:300m;3b-6b:500m;6b-9b:800m';
   state.strategy_settings.bankroll_step = Number(state.strategy_settings.bankroll_step) || 2000000000;
   state.strategy_settings.gamble_unlock = Number(state.strategy_settings.gamble_unlock) || 500000000;
+  state.strategy_settings.custom_slayer_share = Math.max(0, Math.min(100, Number(state.strategy_settings.custom_slayer_share) || 60));
+  state.strategy_settings.custom_fp_share = Math.max(0, Math.min(100, Number(state.strategy_settings.custom_fp_share) || 40));
   state.fp_settings = state.fp_settings || {bankroll:0, base_stake:0, stop_loss:0, take_profit:0};
   state.fp_settings.bankroll = Number(state.fp_settings.bankroll) || 0;
   state.fp_settings.base_stake = Number(state.fp_settings.base_stake) || 0;
@@ -4212,6 +4481,31 @@ function normalizeState(){
     entry.date = entry.date || new Date().toISOString().slice(0,16).replace('T',' ');
     entry.listing_fee = Number(entry.listing_fee) || MARKETPLACE_LISTING_FEE;
     entry.seller = entry.seller || state.username || 'Local seller';
+    entry.seller_email = String(entry.seller_email || '').trim().toLowerCase();
+  });
+
+  state.tickets = Array.isArray(state.tickets) ? state.tickets : [];
+  state.tickets.forEach(ticket => {
+    if (!ticket.id) ticket.id = generateId();
+    ticket.type = String(ticket.type || 'deposit');
+    ticket.listing_id = String(ticket.listing_id || '');
+    ticket.username = String(ticket.username || '').trim();
+    ticket.amount = Number(ticket.amount) || 0;
+    ticket.contact = String(ticket.contact || '').trim();
+    ticket.description = String(ticket.description || '').trim();
+    ticket.status = String(ticket.status || 'open');
+    ticket.created_by = String(ticket.created_by || '').trim().toLowerCase();
+    ticket.created_by_display = String(ticket.created_by_display || ticket.created_by || 'User').trim();
+    ticket.created_at = Number(ticket.created_at) || Date.now();
+    ticket.messages = Array.isArray(ticket.messages) ? ticket.messages : [];
+    ticket.messages = ticket.messages.map(message => ({
+      id: String(message.id || generateId()),
+      sender: String(message.sender || '').trim().toLowerCase(),
+      sender_display: String(message.sender_display || message.sender || 'User').trim(),
+      text: String(message.text || '').trim(),
+      timestamp: Number(message.timestamp) || Date.now(),
+      isStaff: Boolean(message.isStaff)
+    }));
   });
 
   Object.keys(state.items).forEach(name => {
@@ -4278,10 +4572,11 @@ function closeHiscoresModal() {
 }
 
 async function fetchHiscores() {
+  if (!ensureRegisteredUser('set a username and import stats')) return;
   const username = document.getElementById('username-input').value.trim();
   const statusEl = document.getElementById('hiscores-status');
   if (!username) {
-    alert('Enter a username first.');
+    if (statusEl) statusEl.innerHTML = '<div class="badge red">Enter a username first.</div>';
     return;
   }
 
@@ -4306,8 +4601,7 @@ async function fetchHiscores() {
     state.username = username;
     saveState();
 
-    statusEl.innerHTML = '<div class="badge green">Stats imported successfully.</div>';
-    closeHiscoresModal();
+    statusEl.innerHTML = '<div class="badge green">Username saved and stats imported successfully.</div>';
     switchTab('goals');
     renderSuggestedGoals();
   } catch (err) {
@@ -4547,7 +4841,7 @@ function getGoalSuggestions() {
         score,
         name: `Gear Goal: ${item.name}`,
         shortName: item.name,
-        desc: `${item.desc} ${targetPrice > 0 ? `Set aside ${fmtGP(targetPrice)} GP for this pickup.` : 'Set your live price for this item before saving the goal.'}${unlocked ? ' Your current stats are ready for it.' : ' Close the stat gaps first, then buy in.'}`,
+        desc: `${item.desc} ${targetPrice > 0 ? `Set aside ${fmtGP(targetPrice)} GP for this pickup if you want price tracking.` : 'Price tracking is optional for this item goal.'}${unlocked ? ' Your current stats are ready for it.' : ' Close the stat gaps first, then buy in.'}`,
         category: 'gear',
         priority: item.importance >= 92 ? 'high' : item.importance >= 80 ? 'medium' : 'low',
         target: targetPrice,
@@ -4596,16 +4890,16 @@ function renderSuggestedGoals() {
     <div class="goal-suggestion-card item">
       <div class="goal-suggestion-eyebrow">Next Item Target</div>
       <div class="goal-suggestion-name compact">${goal.gear_item}</div>
-      <div class="goal-suggestion-meta">${goal.price > 0 ? `${fmtGP(goal.price)} GP target` : 'Live price needed'}</div>
+      <div class="goal-suggestion-meta">${goal.price > 0 ? `${fmtGP(goal.price)} GP target` : 'Optional price tracking'}</div>
       <div class="goal-suggestion-desc">${goal.desc}</div>
       <div class="goal-price-editor">
-        <input type="text" id="${getGearPriceInputId(goal.gear_item)}" value="${goal.price > 0 ? fmtGP(goal.price) : ''}" placeholder="Set live item price">
+        <input type="text" id="${getGearPriceInputId(goal.gear_item)}" value="${goal.price > 0 ? fmtGP(goal.price) : ''}" placeholder="Optional item price">
         <div class="goal-price-chip">${goal.basePrice ? `Default: ${fmtGP(goal.basePrice)}` : 'No default price on file'}</div>
       </div>
       <div class="goal-suggestion-footer">
         <div class="goal-suggestion-stat">${goal.unlocked ? 'Stats ready now' : `${goal.statGap} total levels to go`}</div>
         <div class="btn-row" style="margin-top:0;">
-          <button class="btn primary" onclick="createFromSuggestionEncoded('${encodeGoal(goal)}')">Set Item Goal</button>
+          <button class="btn primary" onclick="createFromSuggestionEncoded('${encodeGoal(goal)}')">Set Goal</button>
           <button class="btn" onclick="addCompletedItemGoalEncoded('${encodeGoal(goal)}')">Already Own It</button>
         </div>
       </div>
@@ -4615,7 +4909,7 @@ function renderSuggestedGoals() {
   container.innerHTML = [
     `<div class="goal-suggestion-grid">
       ${featuredXpGoal ? renderXpCard(featuredXpGoal) : '<div class="goal-suggestion-empty">No featured skill goal available right now.</div>'}
-      ${featuredItemGoal ? renderItemCard(featuredItemGoal) : '<div class="goal-suggestion-empty">No next item target available right now. Complete an active gear goal or enter a live price for the next upgrade.</div>'}
+      ${featuredItemGoal ? renderItemCard(featuredItemGoal) : '<div class="goal-suggestion-empty">No next item target available right now. Complete an active gear goal or create a custom one.</div>'}
     </div>`
   ].join('');
 }
@@ -4629,7 +4923,6 @@ function saveGearPriceOverride(itemName) {
   if(!input) return;
   const parsed = parseGP(input.value);
   if(parsed <= 0){
-    alert('Enter a valid item price.');
     return;
   }
   state.gear_price_overrides[itemName] = parsed;
@@ -4651,16 +4944,12 @@ function applyGearGoalPrice(goal) {
 }
 
 function addCompletedItemGoal(goal) {
+  if (!ensureRegisteredUser('track owned items')) return;
   const appliedGoal = applyGearGoalPrice({ ...goal });
-  if((Number(appliedGoal.target) || 0) <= 0){
-    alert('Enter a live item price first, then mark it owned.');
-    return;
-  }
   if (state.goals.some(existing => existing.category === 'gear' && (existing.gear_item || existing.name) === (appliedGoal.gear_item || appliedGoal.name) && existing.completed)) {
-    alert('That item is already marked as owned.');
     return;
   }
-  const target = appliedGoal.target || appliedGoal.price || 1;
+  const target = Number(appliedGoal.target || appliedGoal.price) || 0;
   state.goals.push({
     id: generateId(),
     name: appliedGoal.name,
@@ -4704,21 +4993,17 @@ function createFromSuggestionEncoded(payload) {
 }
 
 function createFromSuggestion(goal) {
+  if (!ensureRegisteredUser('create goals')) return;
   if(goal.type === 'gear_goal' && goal.gear_item) goal = applyGearGoalPrice({ ...goal });
-  if(goal.type === 'gear_goal' && (Number(goal.target) || 0) <= 0){
-    alert('Enter a live item price first, then set the item goal.');
-    return;
-  }
   const duplicateExists = state.goals.some(existing => !existing.completed && (
     (goal.category === 'gear' && (existing.gear_item || existing.name) === (goal.gear_item || goal.name)) ||
     (goal.category !== 'gear' && existing.name === goal.name)
   ));
   if (duplicateExists) {
-    alert('That goal is already active.');
     return;
   }
-  let target = goal.target || 99;
-  let unit = goal.unit || 'levels';
+  let target = goal.category === 'gear' ? (Number(goal.target || goal.price) || 0) : (goal.target || 99);
+  let unit = goal.category === 'gear' ? 'gp' : (goal.unit || 'levels');
 
   if(!goal.target && goal.name.includes('→')) {
     const parts = goal.name.split('→');
@@ -4796,6 +5081,7 @@ function syncGoalCategoryFields() {
 }
 
 function createCustomGoal() {
+  if (!ensureRegisteredUser('create goals')) return;
   const name = document.getElementById('goal-name').value.trim();
   const desc = document.getElementById('goal-desc').value.trim();
   const category = document.getElementById('goal-category').value;
@@ -4804,7 +5090,7 @@ function createCustomGoal() {
   const target = category === 'gear' ? gearPrice : parseInt(document.getElementById('goal-target').value);
   const unit = category === 'gear' ? 'gp' : document.getElementById('goal-unit').value.trim();
 
-  if(!name || !target || !unit) {
+  if(!name || (category !== 'gear' && (!target || !unit))) {
     alert('Fill in all fields');
     return;
   }
@@ -4813,8 +5099,8 @@ function createCustomGoal() {
     id: generateId(),
     name,
     desc,
-    target,
-    unit,
+    target: category === 'gear' ? gearPrice : target,
+    unit: category === 'gear' ? 'gp' : unit,
     category,
     priority,
     progress: 0,
@@ -4858,6 +5144,7 @@ function updateGoalProgress(goalId, newProgress) {
 }
 
 function completeGoal(goalId) {
+  if (!ensureRegisteredUser('update goals')) return;
   const goal = state.goals.find(g => g.id === goalId);
   if(!goal) return;
   goal.progress = goal.target;
@@ -4868,6 +5155,7 @@ function completeGoal(goalId) {
 }
 
 function deleteGoal(goalId) {
+  if (!ensureRegisteredUser('delete goals')) return;
   const idx = state.goals.findIndex(g => g.id === goalId);
   if(idx > -1) {
     state.goals.splice(idx, 1);
@@ -4877,6 +5165,7 @@ function deleteGoal(goalId) {
 }
 
 function addFpItem() {
+  if (!ensureRegisteredUser('track FP items')) return;
   const name = document.getElementById('fp-item-name')?.value.trim();
   const buyValue = parseGP(document.getElementById('fp-item-buy')?.value);
   const note = document.getElementById('fp-item-note')?.value.trim();
@@ -5014,14 +5303,17 @@ function renderGoals() {
     activeContainer.innerHTML = '<div class="card"><div class="empty">No active goals. Create one to get started!</div></div>';
   } else {
     activeContainer.innerHTML = `<div class="goal-stack">${activeGoals.map(goal => {
-      const pct = Math.min(100, (goal.progress / goal.target) * 100);
+      const hasNumericTarget = Number(goal.target) > 0;
+      const pct = hasNumericTarget ? Math.min(100, (goal.progress / goal.target) * 100) : 0;
       const progressLabel = goal.category === 'gear'
-        ? `${fmtGP(goal.progress)} / ${fmtGP(goal.target)} GP`
+        ? hasNumericTarget
+          ? `${fmtGP(goal.progress)} / ${fmtGP(goal.target)} GP`
+          : 'Optional price not set'
         : `${goal.progress} / ${goal.target} ${goal.unit}`;
       const kicker = goal.category === 'gear' ? 'Item Goal' : goal.category === 'skill' ? 'XP Goal' : goal.category === 'wealth' ? 'GP Goal' : 'Progress Goal';
       
       return `
-        <div class="goal-showcase ${goal.category === 'gear' ? 'gear' : 'xp'}">
+        <div class="goal-showcase ${goal.category === 'gear' ? 'gear' : 'xp'} priority-${goal.priority || 'medium'}">
           <div class="goal-showcase-top">
             <div>
               <div class="goal-kicker">${kicker}</div>
@@ -5035,14 +5327,14 @@ function renderGoals() {
           </div>
           <div class="goal-showcase-stats">
             <span>${progressLabel}</span>
-            <span>${pct.toFixed(0)}% complete</span>
-            ${goal.category === 'gear' ? `<span>${fmtGP(goal.gp_price || goal.target)} item value</span>` : ''}
+            <span>${hasNumericTarget ? `${pct.toFixed(0)}% complete` : 'Complete when ready'}</span>
+            ${goal.category === 'gear' && hasNumericTarget ? `<span>${fmtGP(goal.gp_price || goal.target)} item value</span>` : ''}
           </div>
-          <div class="form-group" style="margin:0 0 12px 0;">
+          <div class="form-group" style="margin:0 0 12px 0;${goal.category === 'gear' && !hasNumericTarget ? 'display:none;' : ''}">
             <input type="${goal.category === 'gear' ? 'text' : 'number'}" placeholder="${goal.category === 'gear' ? 'Add GP progress' : 'Add progress'}" style="padding:8px;font-size:12px;" id="progress-${goal.id}" />
           </div>
           <div class="goal-buttons">
-            <button class="goal-btn primary-action" onclick="addProgress('${goal.id}')">+ Add Progress</button>
+            ${goal.category === 'gear' && !hasNumericTarget ? '' : `<button class="goal-btn primary-action" onclick="addProgress('${goal.id}')">+ Add Progress</button>`}
             <button class="goal-btn" onclick="completeGoal('${goal.id}')">${goal.category === 'gear' ? 'Complete' : 'Mark Complete'}</button>
             <button class="goal-btn" onclick="deleteGoal('${goal.id}')">Delete</button>
           </div>
@@ -5058,7 +5350,7 @@ function renderGoals() {
     completedContainer.innerHTML = completedGoals.map(goal => {
       const date = new Date(goal.completed_at).toLocaleDateString();
       const completedLabel = goal.category === 'gear'
-        ? `${fmtGP(goal.progress)} GP`
+        ? (Number(goal.progress) > 0 ? `${fmtGP(goal.progress)} GP` : 'Owned item goal')
         : `${goal.progress} ${goal.unit}`;
       return `
         <div class="item-row">
@@ -5072,6 +5364,7 @@ function renderGoals() {
 }
 
 function addProgress(goalId) {
+  if (!ensureRegisteredUser('update goals')) return;
   const input = document.getElementById(`progress-${goalId}`);
   const goal = state.goals.find(g => g.id === goalId);
   if(!goal) return;
@@ -5104,7 +5397,7 @@ function newSession(){
   sessionProfit=0;
 }
 
-function switchTab(tab){
+async function switchTab(tab){
   if (tab === 'moderation' && !isStaffUser()) return;
   if (tab === 'admin' && !isAdminUser()) return;
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -5112,6 +5405,9 @@ function switchTab(tab){
   const navItem = document.querySelector(`.nav-item[onclick*="switchTab('${tab}')"]`);
   if(navItem) navItem.classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
+  if (tab === 'marketplace' || tab === 'moderation' || tab === 'admin') {
+    await syncCommunityStateFromServer();
+  }
   recalcItemStats();
   if (tab === 'moderation') {
     renderAllMembers();
@@ -5149,8 +5445,8 @@ function updateSuggestedCard(){
 }
 
 function calcProfit(){
-  const buy=parseFloat(document.getElementById('buy-price').value)||0;
-  const sell=parseFloat(document.getElementById('sell-price').value)||0;
+  const buy=parseGP(document.getElementById('buy-price').value)||0;
+  const sell=parseGP(document.getElementById('sell-price').value)||0;
   const qty=parseInt(document.getElementById('qty').value)||1;
   const el=document.getElementById('profit-preview');
   if(!buy||!sell){el.textContent='Enter prices above to preview profit.';el.style.color='var(--muted)';return;}
@@ -5161,9 +5457,10 @@ function calcProfit(){
 }
 
 function logTrade(){
+  if (!ensureRegisteredUser('log flips')) return;
   const itemName=document.getElementById('item-select').value;
-  const buy=parseFloat(document.getElementById('buy-price').value);
-  const sell=parseFloat(document.getElementById('sell-price').value);
+  const buy=parseGP(document.getElementById('buy-price').value);
+  const sell=parseGP(document.getElementById('sell-price').value);
   const qty=parseInt(document.getElementById('qty').value)||1;
   if(!itemName||!buy||!sell){alert('Please fill in all fields.');return;}
   
@@ -5210,7 +5507,7 @@ function confirmSellTrade(id){
   const entry = prompt(`Sold ${trade.item} (qty ${trade.qty})?\n\nEnter actual sell price (or press OK to use ${fmtGP(trade.sell)}):`, trade.sell);
   if(entry === null) return;
   
-  const actualSell = parseFloat(entry) || trade.sell;
+  const actualSell = parseGP(entry) || trade.sell;
   if(!actualSell || actualSell <= 0){alert('Enter a valid sell price.');return;}
 
   trade.sell = actualSell;
@@ -5706,7 +6003,7 @@ function renderMyPendingListings() {
   `).join('');
 }
 
-function submitMarketplaceListing() {
+async function submitMarketplaceListing() {
   if (!currentUser) {
     openAuthModal('signup');
     setAuthStatus('Create or sign in to an account before posting a username listing.', 'error');
@@ -5741,7 +6038,7 @@ function submitMarketplaceListing() {
   }
 
   const listingId = generateId();
-  state.marketplace_listings.unshift({
+  const listing = {
     id: listingId,
     username,
     price,
@@ -5752,10 +6049,9 @@ function submitMarketplaceListing() {
     status: 'pending',
     listing_fee: MARKETPLACE_LISTING_FEE,
     date: new Date().toISOString().slice(0,16).replace('T',' ')
-  });
-  
-  state.tickets = state.tickets || [];
-  state.tickets.unshift({
+  };
+
+  const ticket = {
     id: generateId(),
     type: 'deposit',
     listing_id: listingId,
@@ -5775,16 +6071,27 @@ function submitMarketplaceListing() {
       timestamp: Date.now(),
       isStaff: false
     }]
-  });
-  
-  saveState();
+  };
+
+  try {
+    await postCommunityAction('submit_listing', { listing, ticket });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not submit the listing.');
+      return;
+    }
+    state.marketplace_listings.unshift(listing);
+    state.tickets = state.tickets || [];
+    state.tickets.unshift(ticket);
+    saveState();
+  }
   trackUserActivity();
   clearMarketplaceForm();
   renderMarketplace();
   alert(`Listing submitted! Contact an Impact MOD in your ticket below to verify your ${fmtGP(MARKETPLACE_LISTING_FEE)} GP deposit.`);
 }
 
-function cancelMyListing(listingId) {
+async function cancelMyListing(listingId) {
   const listing = (state.marketplace_listings || []).find(l => l.id === listingId);
   if (!listing) return;
   
@@ -5796,13 +6103,21 @@ function cancelMyListing(listingId) {
   
   if (!confirm(`Cancel listing for "${listing.username}"?`)) return;
   
-  listing.status = 'cancelled';
-  saveState();
+  try {
+    await postCommunityAction('update_listing_status', { listing_id: listingId, status: 'cancelled' });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not cancel the listing.');
+      return;
+    }
+    listing.status = 'cancelled';
+    saveState();
+  }
   renderMarketplace();
   alert('Listing cancelled.');
 }
 
-function modCancelListing(listingId) {
+async function modCancelListing(listingId) {
   if (!isStaffUser()) return;
   
   const listing = (state.marketplace_listings || []).find(l => l.id === listingId);
@@ -5811,16 +6126,32 @@ function modCancelListing(listingId) {
   const reason = prompt('Reason for cancelling this listing:', 'Violation of marketplace rules');
   if (!reason) return;
   
-  listing.status = 'cancelled';
-  listing.cancelled_by = getCurrentUser()?.email;
-  listing.cancelled_reason = reason;
-  listing.cancelled_at = new Date().toISOString().slice(0,16).replace('T',' ');
-  saveState();
+  const cancelledBy = getCurrentUser()?.email || '';
+  const cancelledAt = new Date().toISOString().slice(0,16).replace('T',' ');
+  try {
+    await postCommunityAction('update_listing_status', {
+      listing_id: listingId,
+      status: 'cancelled',
+      cancelled_by: cancelledBy,
+      cancelled_reason: reason,
+      cancelled_at: cancelledAt
+    });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not cancel the listing.');
+      return;
+    }
+    listing.status = 'cancelled';
+    listing.cancelled_by = cancelledBy;
+    listing.cancelled_reason = reason;
+    listing.cancelled_at = cancelledAt;
+    saveState();
+  }
   renderModPendingListings();
   renderMarketplaceListings();
 }
 
-function createDepositTicketFromForm() {
+async function createDepositTicketFromForm() {
   if (!currentUser) {
     openAuthModal('signup');
     setAuthStatus('Sign in to create a deposit ticket.', 'error');
@@ -5843,7 +6174,7 @@ function createDepositTicketFromForm() {
     return;
   }
   
-  createDepositTicket(username, amount, contact, description);
+  await createDepositTicket(username, amount, contact, description);
   
   document.getElementById('ticket-username').value = '';
   document.getElementById('ticket-amount').value = '';
@@ -5895,11 +6226,19 @@ function viewMyTickets() {
   `).join('');
 }
 
-function updateMarketplaceListingStatus(listingId, status) {
+async function updateMarketplaceListingStatus(listingId, status) {
   const entry = (state.marketplace_listings || []).find(item => item.id === listingId);
   if (!entry) return;
-  entry.status = status;
-  saveState();
+  try {
+    await postCommunityAction('update_listing_status', { listing_id: listingId, status });
+  } catch (e) {
+    if (!canUseLocalCommunityFallback()) {
+      alert(e.message || 'Could not update the listing.');
+      return;
+    }
+    entry.status = status;
+    saveState();
+  }
   renderMarketplace();
 }
 
@@ -5908,7 +6247,7 @@ function approveMarketplaceListing(listingId) {
     alert('Only staff can approve listings.');
     return;
   }
-  updateMarketplaceListingStatus(listingId, 'active');
+  void updateMarketplaceListingStatus(listingId, 'active');
 }
 
 function rejectMarketplaceListing(listingId) {
@@ -5916,7 +6255,7 @@ function rejectMarketplaceListing(listingId) {
     alert('Only staff can reject listings.');
     return;
   }
-  updateMarketplaceListingStatus(listingId, 'rejected');
+  void updateMarketplaceListingStatus(listingId, 'rejected');
 }
 
 function markMarketplaceSold(listingId) {
@@ -5925,7 +6264,7 @@ function markMarketplaceSold(listingId) {
     alert('Only the seller or staff can update this listing.');
     return;
   }
-  updateMarketplaceListingStatus(listingId, 'sold');
+  void updateMarketplaceListingStatus(listingId, 'sold');
 }
 
 function removeMarketplaceListing(listingId) {
@@ -5934,12 +6273,13 @@ function removeMarketplaceListing(listingId) {
     alert('Only the seller or staff can update this listing.');
     return;
   }
-  updateMarketplaceListingStatus(listingId, 'removed');
+  void updateMarketplaceListingStatus(listingId, 'removed');
 }
 
 function renderSlayerTaskOptions(filter = ''){
   const sel = document.getElementById('slayer-task');
   if(!sel) return;
+  const currentValue = sel.value;
   const needle = filter.trim().toLowerCase();
   const matching = SLAYER_TASKS.filter(task => !needle || task.name.toLowerCase().includes(needle));
   if(!matching.length){
@@ -5951,7 +6291,7 @@ function renderSlayerTaskOptions(filter = ''){
     hard: matching.filter(task => task.tier === 'hard'),
     elite: matching.filter(task => task.tier === 'elite')
   };
-  sel.innerHTML = Object.entries(groups)
+  const optionsHtml = Object.entries(groups)
     .filter(([, tasks]) => tasks.length)
     .map(([tier, tasks]) => {
       const label = tier === 'normal' ? 'Normal tier' : tier === 'hard' ? 'Hard tier' : 'Elite tier';
@@ -5965,6 +6305,10 @@ function renderSlayerTaskOptions(filter = ''){
       return `<optgroup label="${label}">${options}</optgroup>`;
     })
     .join('');
+  sel.innerHTML = `<option value="">Choose a task</option>${optionsHtml}`;
+  if (currentValue && [...sel.options].some(option => option.value === currentValue)) {
+    sel.value = currentValue;
+  }
 }
 
 function toggleSlayerFavorite(){
@@ -6081,6 +6425,7 @@ function filterSlayerTasks(){
 }
 
 function logSlayerGP(){
+  if (!ensureRegisteredUser('log Slayer sessions')) return;
   const task = document.getElementById('slayer-task').value;
   const gp = parseGP(document.getElementById('slayer-gp').value);
   const minutes = parseInt(document.getElementById('slayer-minutes').value, 10) || 0;
@@ -6109,6 +6454,7 @@ function logSlayerGP(){
 }
 
 function logFpSession(){
+  if (!ensureRegisteredUser('log FP sessions')) return;
   const bankroll = getFpWorkingBankroll();
   const baseStake = getFpWorkingBaseStake();
   const result = document.getElementById('fp-result').value;
@@ -6752,7 +7098,7 @@ function resetUserTrackerStatsByEmail(targetEmail, scope = 'all'){
     state.community_prices = (state.community_prices || []).filter(entry => String(entry.user_email || '').toLowerCase() !== email);
   }
   if(scope === 'marketplace' || scope === 'all'){
-    state.marketplace_listings = (state.marketplace_listings || []).filter(entry => String(entry.seller || '').toLowerCase() !== email);
+    state.marketplace_listings = (state.marketplace_listings || []).filter(entry => String(entry.seller_email || '').toLowerCase() !== email);
   }
 
   if(state.user_sessions && state.user_sessions[email]) {
@@ -6811,8 +7157,13 @@ function evaluateFpGuardrails(){
 }
 
 function logTransfer(){
-  const from = document.getElementById('transfer-from').value;
-  const to = document.getElementById('transfer-to').value;
+  if (!ensureRegisteredUser('record transfers')) return;
+  const fromSelect = document.getElementById('transfer-from');
+  const toSelect = document.getElementById('transfer-to');
+  const from = fromSelect?.value || '';
+  const to = toSelect?.value || '';
+  const fromLabel = fromSelect?.selectedOptions?.[0]?.textContent?.trim() || from;
+  const toLabel = toSelect?.selectedOptions?.[0]?.textContent?.trim() || to;
   const amount = parseGP(document.getElementById('transfer-amount').value);
   const note = document.getElementById('transfer-note').value.trim();
   if(from === to){
@@ -6827,7 +7178,9 @@ function logTransfer(){
   state.transfers.unshift({
     id: generateId(),
     from,
+    from_label: fromLabel,
     to,
+    to_label: toLabel,
     amount,
     note,
     date: new Date().toISOString().slice(0,16).replace('T',' '),
@@ -6840,7 +7193,29 @@ function logTransfer(){
   document.getElementById('transfer-note').value = '';
 }
 
+function getCustomStrategyShares() {
+  const slayerInput = parseFloat(document.getElementById('custom-slayer-share')?.value);
+  const fpInput = parseFloat(document.getElementById('custom-fp-share')?.value);
+  let slayerShare = Number.isFinite(slayerInput) ? slayerInput : Number(state.strategy_settings?.custom_slayer_share) || 60;
+  let fpShare = Number.isFinite(fpInput) ? fpInput : Number(state.strategy_settings?.custom_fp_share) || 40;
+  slayerShare = Math.max(0, slayerShare);
+  fpShare = Math.max(0, fpShare);
+  const total = slayerShare + fpShare;
+  if (total <= 0) return { slayerShare: 0.6, fpShare: 0.4 };
+  return { slayerShare: slayerShare / total, fpShare: fpShare / total };
+}
+
+function deleteTransfer(transferId){
+  if (!ensureRegisteredUser('delete transfers')) return;
+  const idx = state.transfers.findIndex(entry => entry.id === transferId);
+  if(idx === -1) return;
+  state.transfers.splice(idx, 1);
+  saveState();
+  renderRspsSections();
+}
+
 function generatePlan(){
+  if (!ensureRegisteredUser('use the strategy planner')) return;
   const current = parseGP(document.getElementById('plan-current-bank').value);
   const target = parseGP(document.getElementById('plan-target-bank').value);
   const selectedProfile = document.getElementById('plan-risk').value;
@@ -6858,6 +7233,7 @@ function generatePlan(){
   let slayerShare;
   let strategyNote = '';
   let fpBet;
+  let fpShare;
   if(selectedProfile === 'custom_tiered'){
     const tiers = parseCustomTierRules(customRules);
     if(!tiers.length){
@@ -6865,25 +7241,31 @@ function generatePlan(){
       return;
     }
     const activeTier = tiers.find(t => current >= t.min && current < t.max) || tiers[tiers.length - 1];
+    const customShares = getCustomStrategyShares();
     fpBet = Math.max(10_000_000, activeTier.bet);
     riskPct = fpBet / current;
-    slayerShare = riskPct >= 0.2 ? 0.45 : 0.6;
-    strategyNote = `Custom tier active: ${fmtGP(activeTier.min)}-${fmtGP(activeTier.max)} -> ${fmtGP(activeTier.bet)} bet.`;
+    slayerShare = customShares.slayerShare;
+    fpShare = customShares.fpShare;
+    strategyNote = `Custom tier active: ${fmtGP(activeTier.min)}-${fmtGP(activeTier.max)} bankroll -> ${fmtGP(activeTier.bet)} FP shot.`;
   } else {
     const profile = STRATEGY_LIBRARY[selectedProfile] || STRATEGY_LIBRARY.balanced;
     const fpModel = getFpStakeModel(selectedProfile);
     riskPct = profile.riskPct;
     slayerShare = profile.slayerShare;
+    fpShare = 1 - slayerShare;
     fpBet = getSuggestedFpBaseStake(current, selectedProfile);
     strategyNote = `${profile.note} Auto logger rule: ${fpModel.note}`;
   }
 
-  const fpShare = 1 - slayerShare;
   const estDays = daily > 0 ? Math.ceil(remaining / daily) : null;
   const bankrollRule = getBankrollRuleSummary();
+  const aggressionFactor = selectedProfile === 'aggressive' ? 0.65 : selectedProfile === 'conservative' ? 1.25 : 1;
+  const suggestedTasksBeforeFp = Math.max(3, Math.round((fpBet / current) * 60 * aggressionFactor));
 
   state.strategy_settings.selected = selectedProfile;
   state.strategy_settings.custom_rules = customRules || state.strategy_settings.custom_rules;
+  state.strategy_settings.custom_slayer_share = Math.round(slayerShare * 100);
+  state.strategy_settings.custom_fp_share = Math.round(fpShare * 100);
   saveState();
   renderRspsSections();
 
@@ -6891,7 +7273,8 @@ function generatePlan(){
     Suggested FP base stake: <span style="color:var(--accent);font-weight:700;">${fmtGP(fpBet)} GP</span> (${Math.round(riskPct*100)}% bankroll cap).<br>
     Split focus: <span style="color:var(--green);">${Math.round(slayerShare*100)}% Slayer GP</span> + <span style="color:var(--amber);">${Math.round(fpShare*100)}% FP/Flips</span>.<br>
     Gap to target: <span style="font-weight:600;">${fmtGP(remaining)} GP</span>${estDays ? ` · ETA ~ ${estDays} day(s) at ${fmtGP(daily)}/day.` : ''}<br>
-    Gamble unlock rule: every ${fmtGP(bankrollRule.step)} bankroll unlocks ${fmtGP(bankrollRule.unlock)} for gambling. Current unlocked allocation: ${fmtGP(bankrollRule.unlockedAmount)}.<br>
+    Bank-share rule: every ${fmtGP(bankrollRule.step)} bankroll allows ${fmtGP(bankrollRule.unlock)} for FP or flips. Current unlocked allocation: ${fmtGP(bankrollRule.unlockedAmount)}.<br>
+    Pace guide: at this bankroll and aggression, stack about ${suggestedTasksBeforeFp} Slayer task${suggestedTasksBeforeFp === 1 ? '' : 's'} before taking an FP shot near ${fmtGP(fpBet)}.<br>
     Strategy note: ${strategyNote}
   `;
 }
@@ -6912,6 +7295,7 @@ function parseCustomTierRules(rules){
 }
 
 function saveCustomStrategy(){
+  if (!ensureRegisteredUser('save custom strategy rules')) return;
   const rules = document.getElementById('plan-custom-rules').value.trim();
   const parsed = parseCustomTierRules(rules);
   if(!parsed.length){
@@ -6920,13 +7304,15 @@ function saveCustomStrategy(){
   }
   state.strategy_settings.custom_rules = rules;
   state.strategy_settings.selected = 'custom_tiered';
+  state.strategy_settings.custom_slayer_share = Math.max(0, Math.min(100, parseFloat(document.getElementById('custom-slayer-share')?.value) || state.strategy_settings.custom_slayer_share || 60));
+  state.strategy_settings.custom_fp_share = Math.max(0, Math.min(100, parseFloat(document.getElementById('custom-fp-share')?.value) || state.strategy_settings.custom_fp_share || 40));
   saveState();
   document.getElementById('plan-risk').value = 'custom_tiered';
   renderRspsSections();
-  alert('Custom strategy saved.');
 }
 
 function saveBankrollRule(){
+  if (!ensureRegisteredUser('save bank-share rules')) return;
   const step = parseGP(document.getElementById('rule-bankroll-step')?.value);
   const unlock = parseGP(document.getElementById('rule-gamble-amount')?.value);
   if(step <= 0 || unlock <= 0){
@@ -6951,17 +7337,26 @@ function syncStrategyControls(){
   const rules = document.getElementById('plan-custom-rules');
   const bankrollStep = document.getElementById('rule-bankroll-step');
   const gambleUnlock = document.getElementById('rule-gamble-amount');
+  const customSlayerShare = document.getElementById('custom-slayer-share');
+  const customFpShare = document.getElementById('custom-fp-share');
   if(!sel || !rules) return;
   sel.value = state.strategy_settings?.selected || 'balanced';
   rules.value = state.strategy_settings?.custom_rules || '0-3b:300m;3b-6b:500m;6b-9b:800m';
   if(bankrollStep) bankrollStep.value = state.strategy_settings?.bankroll_step ? fmtGP(state.strategy_settings.bankroll_step) : '';
   if(gambleUnlock) gambleUnlock.value = state.strategy_settings?.gamble_unlock ? fmtGP(state.strategy_settings.gamble_unlock) : '';
+  if(customSlayerShare) customSlayerShare.value = Number(state.strategy_settings?.custom_slayer_share) || 60;
+  if(customFpShare) customFpShare.value = Number(state.strategy_settings?.custom_fp_share) || 40;
 }
 
 function renderRspsSections(){
-  const slayerTotal = state.slayer_logs.reduce((s, e) => s + (Number(e.gp) || 0), 0);
-  const fpTotal = state.fp_logs.reduce((s, e) => s + (Number(e.net) || 0), 0);
-  const transferTotal = state.transfers.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  renderLinkedAccountsEditor();
+  const viewerEmail = getActorEmail();
+  const visibleSlayerLogs = viewerEmail ? state.slayer_logs.filter(e => String(e.actor_email || '').toLowerCase() === viewerEmail) : [];
+  const visibleFpLogs = viewerEmail ? state.fp_logs.filter(e => String(e.actor_email || '').toLowerCase() === viewerEmail) : [];
+  const visibleTransfers = viewerEmail ? state.transfers.filter(e => String(e.actor_email || '').toLowerCase() === viewerEmail) : [];
+  const slayerTotal = visibleSlayerLogs.reduce((s, e) => s + (Number(e.gp) || 0), 0);
+  const fpTotal = visibleFpLogs.reduce((s, e) => s + (Number(e.net) || 0), 0);
+  const transferTotal = visibleTransfers.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   const fpItemTotal = state.fp_items.reduce((s, item) => s + (Number(item.buy_value) || 0), 0);
   const combined = state.total_profit;
   const streak = getFpStreak();
@@ -6969,6 +7364,7 @@ function renderRspsSections(){
   const guardrailWarning = evaluateFpGuardrails();
   const selectedProfile = state.strategy_settings?.selected || 'balanced';
   const strategyProfile = STRATEGY_LIBRARY[selectedProfile] || STRATEGY_LIBRARY.balanced;
+  const customShares = getCustomStrategyShares();
   const currentBank = parseGP(document.getElementById('plan-current-bank')?.value || 0) || state.fp_settings.bankroll;
   const workingBankroll = getFpWorkingBankroll();
   const workingBaseStake = getFpWorkingBaseStake();
@@ -6996,7 +7392,7 @@ function renderRspsSections(){
   const streakDisplayEl = document.getElementById('fp-streak-display');
   if(streakDisplayEl) streakDisplayEl.textContent = streakLabel;
 
-  const slayerList = state.slayer_logs.slice(0, 8).map(e => {
+  const slayerList = visibleSlayerLogs.slice(0, 8).map(e => {
     const gph = e.minutes > 0 ? Math.round((e.gp / e.minutes) * 60) : 0;
     return `<div class="item-row"><div class="item-name">${e.task} <span style="color:var(--muted);font-size:11px;">(${e.account})</span></div><div class="item-meta">${fmtGP(e.gp)} GP</div><div style="min-width:110px;text-align:right;color:var(--muted);font-size:11px;">${gph ? `${fmtGP(gph)}/hr` : '—'} · ${e.date}</div></div>`;
   }).join('');
@@ -7005,35 +7401,37 @@ function renderRspsSections(){
   updateSlayerAccessUI(document.getElementById('slayer-task')?.value || '');
 
   const slayerSessionCountEl = document.getElementById('slayer-session-count');
-  if(slayerSessionCountEl) slayerSessionCountEl.textContent = state.slayer_logs.length.toLocaleString();
-  const slayerMinutes = state.slayer_logs.reduce((sum, entry) => sum + (Number(entry.minutes) || 0), 0);
+  if(slayerSessionCountEl) slayerSessionCountEl.textContent = visibleSlayerLogs.length.toLocaleString();
+  const slayerMinutes = visibleSlayerLogs.reduce((sum, entry) => sum + (Number(entry.minutes) || 0), 0);
   const slayerAvgGph = slayerMinutes > 0 ? Math.round((slayerTotal / slayerMinutes) * 60) : 0;
   const slayerAvgGphEl = document.getElementById('slayer-avg-gph');
   if(slayerAvgGphEl) slayerAvgGphEl.textContent = slayerAvgGph ? `${fmtGP(slayerAvgGph)}/hr` : '—';
   const bestTaskEl = document.getElementById('slayer-best-task');
   if(bestTaskEl){
-    const bestTask = state.slayer_logs.reduce((best, entry) => {
+    const bestTask = visibleSlayerLogs.reduce((best, entry) => {
       const currentGph = entry.minutes > 0 ? entry.gp / entry.minutes : 0;
       return !best || currentGph > best.gph ? { name: entry.task, gph: currentGph } : best;
     }, null);
     bestTaskEl.textContent = bestTask ? bestTask.name : '—';
   }
 
-  const transferList = state.transfers.slice(0, 8).map(e => {
-    return `<div class="item-row"><div class="item-name">${e.from} → ${e.to}<div style="color:var(--muted);font-size:11px;">${e.note || 'No note'}</div></div><div class="item-meta">${fmtGP(e.amount)} GP</div><div style="min-width:110px;text-align:right;color:var(--muted);font-size:11px;">${e.date}</div></div>`;
+  const transferList = visibleTransfers.slice(0, 8).map(e => {
+    const fromName = e.from_label || e.from;
+    const toName = e.to_label || e.to;
+    return `<div class="item-row"><div class="item-name">${escapeHtml(fromName)} → ${escapeHtml(toName)}<div style="color:var(--muted);font-size:11px;">${escapeHtml(e.note || 'No note')}</div></div><div class="item-meta">${fmtGP(e.amount)} GP</div><div style="min-width:160px;text-align:right;color:var(--muted);font-size:11px;">${e.date}<div style="margin-top:8px;"><button class="btn-sm" onclick="deleteTransfer('${e.id}')">Delete</button></div></div></div>`;
   }).join('');
   const transferLogList = document.getElementById('transfer-log-list');
   if(transferLogList) transferLogList.innerHTML = transferList || '<div class="empty">No transfers logged yet.</div>';
   const transferCountEl = document.getElementById('transfer-count');
-  if(transferCountEl) transferCountEl.textContent = state.transfers.length.toLocaleString();
+  if(transferCountEl) transferCountEl.textContent = visibleTransfers.length.toLocaleString();
   const largestTransferEl = document.getElementById('transfer-largest');
   if(largestTransferEl){
-    const largest = state.transfers.reduce((best, entry) => Math.max(best, Number(entry.amount) || 0), 0);
+    const largest = visibleTransfers.reduce((best, entry) => Math.max(best, Number(entry.amount) || 0), 0);
     largestTransferEl.textContent = largest ? `${fmtGP(largest)} GP` : '—';
   }
   const latestRouteEl = document.getElementById('transfer-latest-route');
   if(latestRouteEl){
-    latestRouteEl.textContent = state.transfers[0] ? `${state.transfers[0].from} → ${state.transfers[0].to}` : '—';
+    latestRouteEl.textContent = visibleTransfers[0] ? `${visibleTransfers[0].from_label || visibleTransfers[0].from} → ${visibleTransfers[0].to_label || visibleTransfers[0].to}` : '—';
   }
 
   syncStrategyControls();
@@ -7053,7 +7451,7 @@ function renderRspsSections(){
   }
   const fpLogList = document.getElementById('fp-log-list');
   if(fpLogList){
-    fpLogList.innerHTML = state.fp_logs.slice(0, 8).map(entry => {
+    fpLogList.innerHTML = visibleFpLogs.slice(0, 8).map(entry => {
       const color = (Number(entry.net) || 0) >= 0 ? 'var(--green)' : 'var(--red)';
       return `<div class="item-row"><div class="item-name">${entry.result === 'custom' ? 'Custom result' : entry.result === 'win' ? 'Win' : 'Loss'}<div style="color:var(--muted);font-size:11px;">${STRATEGY_LIBRARY[entry.profile]?.label || 'Balanced'} · ${entry.bankroll_after ? `Bankroll ${fmtGP(entry.bankroll_after)}` : 'No bankroll saved'}</div></div><div class="item-meta" style="color:${color};">${(Number(entry.net) || 0) >= 0 ? '+' : ''}${fmtGP(entry.net)} GP</div><div style="min-width:140px;text-align:right;color:var(--muted);font-size:11px;">${entry.stake ? `${fmtGP(entry.stake)} auto stake` : 'Custom'} · ${entry.date}</div></div>`;
     }).join('') || '<div class="empty">No FP sessions logged yet.</div>';
@@ -7070,8 +7468,8 @@ function renderRspsSections(){
   const strategyFpShareEl = document.getElementById('strategy-fp-share');
   const strategyProfileLabelEl = document.getElementById('strategy-profile-label');
   const strategyStakeEl = document.getElementById('strategy-recommended-stake');
-  if(strategySlayerShareEl) strategySlayerShareEl.textContent = `${Math.round((selectedProfile === 'custom_tiered' ? 60 : strategyProfile.slayerShare * 100))}%`;
-  if(strategyFpShareEl) strategyFpShareEl.textContent = `${Math.round((selectedProfile === 'custom_tiered' ? 40 : (1 - strategyProfile.slayerShare) * 100))}%`;
+  if(strategySlayerShareEl) strategySlayerShareEl.textContent = `${Math.round((selectedProfile === 'custom_tiered' ? customShares.slayerShare * 100 : strategyProfile.slayerShare * 100))}%`;
+  if(strategyFpShareEl) strategyFpShareEl.textContent = `${Math.round((selectedProfile === 'custom_tiered' ? customShares.fpShare * 100 : (1 - strategyProfile.slayerShare) * 100))}% available`;
   if(strategyProfileLabelEl) strategyProfileLabelEl.textContent = getStrategyProfileLabel(selectedProfile);
   if(strategyStakeEl) strategyStakeEl.textContent = recommendedStake ? `${fmtGP(recommendedStake)} GP` : '—';
   const bankrollRulePreview = document.getElementById('bankroll-rule-preview');
@@ -7079,11 +7477,11 @@ function renderRspsSections(){
     if(bankrollRule.step > 0 && bankrollRule.unlock > 0){
       bankrollRulePreview.innerHTML = `
         Current tracked bankroll: <span style="color:var(--text);font-weight:700;">${fmtGP(bankrollRule.total)} GP</span>.<br>
-        Rule: every <span style="color:var(--accent);font-weight:700;">${fmtGP(bankrollRule.step)} GP</span> unlocks <span style="color:var(--amber);font-weight:700;">${fmtGP(bankrollRule.unlock)} GP</span> of gambling allocation.<br>
+        Rule: every <span style="color:var(--accent);font-weight:700;">${fmtGP(bankrollRule.step)} GP</span> allows <span style="color:var(--amber);font-weight:700;">${fmtGP(bankrollRule.unlock)} GP</span> for FP or flips.<br>
         Unlocked now: <span style="color:var(--green);font-weight:700;">${fmtGP(bankrollRule.unlockedAmount)} GP</span> across ${bankrollRule.tiersHit} tier${bankrollRule.tiersHit !== 1 ? 's' : ''}. Next unlock at ${fmtGP(bankrollRule.nextAt)} GP.
       `;
     } else {
-      bankrollRulePreview.textContent = 'Set a bankroll rule like every 2b tracked bankroll unlocks 500m of gambling allocation.';
+      bankrollRulePreview.textContent = 'Set a bank-share rule like every 2b tracked bankroll allows 500m of FP or flips.';
     }
   }
 }
@@ -7285,6 +7683,8 @@ function render(){
   renderMarketplace();
   renderAdSlots();
   updateAuthUI();
+  renderLinkedAccountsEditor();
+  populateTransferAccountSelects();
   if (isStaffUser()) renderModerationPanel();
   updatePlanUI();
   renderSidebarAccount();
@@ -7313,6 +7713,7 @@ document.getElementById('fp-result')?.addEventListener('change', refreshFpStakeP
   await hydrateAuthUsersCache();
   loadAuthSession();
   loadState();
+  await syncCommunityStateFromServer();
   await handleBillingQueryParams();
   await recoverPaidPlanForSignedInUser();
   await syncPaidSubscriptionIfNeeded();

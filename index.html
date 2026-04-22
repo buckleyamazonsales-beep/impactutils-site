@@ -24,11 +24,11 @@
 
 <div class="modal-overlay hidden" id="goal-modal">
   <div class="modal">
-    <div class="modal-title">Create Custom Goal</div>
-    <div class="modal-sub">Set your own progression target</div>
+    <div class="modal-title">Create Goal</div>
+    <div class="modal-sub">Set a progression target and choose the category that fits it best.</div>
     <div class="form-group">
       <label class="form-label">Goal Name</label>
-      <input type="text" id="goal-name" placeholder="e.g. 50 Zulrah · Max Cooking · 500M Gear">
+      <input type="text" id="goal-name" placeholder="e.g. 50 Zulrah · 99 Cooking · Dragon defender">
     </div>
     <div class="form-group">
       <label class="form-label">Description</label>
@@ -64,7 +64,7 @@
       </div>
     </div>
     <div class="form-group hidden" id="goal-price-group">
-      <label class="form-label">Gear GP Price</label>
+      <label class="form-label">Item GP Price (Optional)</label>
       <input type="text" id="goal-price" placeholder="e.g. 250m · 1.4b · 95000000">
     </div>
     <div class="btn-row">
@@ -80,9 +80,9 @@
     <div class="modal-sub">Enter a username and let the website build recommended goals from account stats.</div>
     <div class="form-group">
       <label class="form-label">Username</label>
-      <input type="text" id="username-input" placeholder="e.g. So" />
+      <input type="text" id="username-input-modal" placeholder="e.g. So" />
     </div>
-    <div id="hiscores-status"></div>
+    <div id="hiscores-status-modal"></div>
     <div class="btn-row">
       <button class="btn primary" onclick="fetchHiscores()" style="flex:1;">Import Stats</button>
       <button class="btn" onclick="closeHiscoresModal()">Cancel</button>
@@ -104,18 +104,18 @@
         <input type="text" id="auth-email" placeholder="e.g. matt@example.com">
       </div>
     </div>
-    <div class="form-group">
+    <div class="form-group hidden">
       <label class="form-label">Password</label>
-      <input type="password" id="auth-password" placeholder="Choose a password">
+      <input type="password" id="auth-password" placeholder="Unused">
     </div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">6-Digit PIN</label>
-        <input type="password" id="auth-pin" inputmode="numeric" maxlength="6" placeholder="e.g. 482915">
+        <label class="form-label">Access PIN</label>
+        <input type="password" id="auth-pin" maxlength="32" placeholder="Letters or numbers">
       </div>
       <div class="form-group" id="auth-pin-confirm-group">
         <label class="form-label">Confirm PIN</label>
-        <input type="password" id="auth-pin-confirm" inputmode="numeric" maxlength="6" placeholder="Repeat your PIN">
+        <input type="password" id="auth-pin-confirm" maxlength="32" placeholder="Repeat your PIN">
       </div>
     </div>
     <div id="auth-status" class="profit-preview" style="display:none;margin-top:0;"></div>
@@ -134,7 +134,7 @@
 <div class="modal-overlay hidden" id="verify-modal">
   <div class="modal">
     <div class="modal-title">Verify Your Email</div>
-    <div class="modal-sub">Accounts must be email verified and protected by a 6-digit PIN before posting listings.</div>
+    <div class="modal-sub">Accounts must be email verified before posting listings.</div>
     <div class="profit-preview" id="verify-helper" style="margin-top:0;">
       Real email sending activates after deployment. Local preview mode can still show the code for testing.
     </div>
@@ -535,9 +535,22 @@
       </div>
 
       <div class="goal-actions">
-        <button class="btn primary" onclick="openGoalModalWithCategory('skill')">+ XP Goal</button>
-        <button class="btn" onclick="openGoalModalWithCategory('gear')">+ Item Goal</button>
-        <button class="btn" onclick="openHiscoresModal()">📊 Refresh Suggestions</button>
+        <button class="btn primary" onclick="openGoalModal()">+ Goal</button>
+        <button class="btn" onclick="document.getElementById('username-input').focus()">Set Username</button>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">Username Goals</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="username-input" placeholder="e.g. So" />
+          </div>
+          <div class="form-group" style="align-self:end;">
+            <button class="btn primary" onclick="fetchHiscores()" style="width:100%;">Set Username</button>
+          </div>
+        </div>
+        <div id="hiscores-status" class="profit-preview" style="margin-top:0;">Set your username to build XP and gear suggestions from account stats.</div>
       </div>
 
       <div id="suggested-goals-container" style="margin-bottom:20px;"></div>
@@ -772,7 +785,7 @@
 
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-card-label">Slayer GP Share</div><div class="stat-card-value green" id="strategy-slayer-share">—</div></div>
-        <div class="stat-card"><div class="stat-card-label">FP / Flip Share</div><div class="stat-card-value amber" id="strategy-fp-share">—</div></div>
+        <div class="stat-card"><div class="stat-card-label">Bank Share</div><div class="stat-card-value amber" id="strategy-fp-share">—</div></div>
         <div class="stat-card"><div class="stat-card-label">Selected Profile</div><div class="stat-card-value" id="strategy-profile-label">Balanced</div></div>
         <div class="stat-card"><div class="stat-card-label">Recommended Base Stake</div><div class="stat-card-value" id="strategy-recommended-stake">—</div></div>
       </div>
@@ -802,6 +815,16 @@
           <label class="form-label">Custom Tier Rules</label>
           <input type="text" id="plan-custom-rules" placeholder="e.g. 0-3b:300m;3b-6b:500m;6b-9b:800m">
         </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Slayer GP Share %</label>
+            <input type="number" id="custom-slayer-share" min="0" max="100" step="1" placeholder="e.g. 60">
+          </div>
+          <div class="form-group">
+            <label class="form-label">FP / Flip Share %</label>
+            <input type="number" id="custom-fp-share" min="0" max="100" step="1" placeholder="e.g. 40">
+          </div>
+        </div>
         <div class="btn-row">
           <button class="btn" onclick="saveCustomStrategy()">Save Custom Rules</button>
           <button class="btn primary" onclick="generatePlan()">Suggest Method</button>
@@ -810,15 +833,15 @@
       </div>
 
       <div class="card">
-        <div class="card-title">🎰 Gamble Unlock Rule</div>
+        <div class="card-title">🎰 Bank Share Rule</div>
         <div class="form-grid">
-          <div class="form-group"><label class="form-label">Every Bankroll</label><input type="text" id="rule-bankroll-step" placeholder="e.g. 2b"></div>
-          <div class="form-group"><label class="form-label">Unlock Gamble Amount</label><input type="text" id="rule-gamble-amount" placeholder="e.g. 500m"></div>
+          <div class="form-group"><label class="form-label">Protected Bank Step</label><input type="text" id="rule-bankroll-step" placeholder="e.g. 2b"></div>
+          <div class="form-group"><label class="form-label">Allowed FP / Flip Amount</label><input type="text" id="rule-gamble-amount" placeholder="e.g. 500m"></div>
         </div>
         <div class="btn-row">
           <button class="btn" onclick="saveBankrollRule()">Save Bankroll Rule</button>
         </div>
-        <div class="profit-preview" id="bankroll-rule-preview">Set a bankroll rule like every 2b tracked bankroll unlocks 500m of gambling allocation.</div>
+        <div class="profit-preview" id="bankroll-rule-preview">Set a bank-share rule like every 2b tracked bankroll allows 500m of FP or flips.</div>
       </div>
     </div>
 
@@ -927,6 +950,21 @@
       <div class="split-grid">
         <div class="card">
           <div class="card-title">🔁 Account Transfers</div>
+          <div style="margin-bottom:16px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);">
+            <div style="font-weight:600;margin-bottom:6px;">Profile Accounts</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Create named accounts on your profile like Main, Alt, Pure, or Gambler. These names power the transfer tracker.</div>
+            <div id="linked-account-list"><div class="empty">Sign in to manage profile accounts.</div></div>
+            <div class="form-grid" style="margin-top:12px;">
+              <div class="form-group">
+                <label class="form-label">New Account Name</label>
+                <input type="text" id="linked-account-name" maxlength="40" placeholder="e.g. Pure">
+              </div>
+              <div class="form-group" style="align-self:end;">
+                <button class="btn" type="button" onclick="addLinkedAccount()">Add Account</button>
+              </div>
+            </div>
+            <div id="linked-account-status" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+          </div>
           <div class="form-grid">
             <div class="form-group"><label class="form-label">From</label>
               <select id="transfer-from">
