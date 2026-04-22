@@ -677,7 +677,7 @@ function getCommunityApiBase() {
   const h = (window.location.hostname || '').toLowerCase();
   if (h === 'localhost' || h === '127.0.0.1') return '';
   if (/\.netlify\.app$/i.test(h)) return '';
-  return '/api';
+  return '/api/community-state.php';
 }
 
 function applyCommunityStatePayload(data = {}) {
@@ -696,7 +696,7 @@ async function syncCommunityStateFromServer() {
   const base = getCommunityApiBase();
   if (!base) return false;
   try {
-    const res = await fetch(`${base}/community-state`, {
+    const res = await fetch(base, {
       method: 'GET',
       headers: { Accept: 'application/json' }
     });
@@ -717,7 +717,7 @@ async function postCommunityAction(action, payload = {}) {
   if (!base) {
     throw new Error('Shared community API unavailable.');
   }
-  const res = await fetch(`${base}/community-state`, {
+  const res = await fetch(base, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...payload })
