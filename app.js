@@ -1125,6 +1125,7 @@ function loadState(){
     if(r){
       state=JSON.parse(r);
       normalizeState();
+      sessionGP = Number(state.session_start_gp) || 0;
       recalcItemStats();
       return;
     }
@@ -1174,7 +1175,8 @@ function loadState(){
     player_data: null,
     banned_users: [],
     user_sessions: {},
-    tickets: []
+    tickets: [],
+    session_start_gp: 0
   };
 }
 
@@ -4422,6 +4424,7 @@ function normalizeState(){
     const nextIndex = Number(state.ad_rotation[slot]) || 0;
     state.ad_rotation[slot] = ((nextIndex % total) + total) % total;
   });
+  state.session_start_gp = Number(state.session_start_gp) || 0;
   state.username = state.username || null;
   state.player_data = state.player_data || null;
   state.banned_users = Array.isArray(state.banned_users) ? state.banned_users : [];
@@ -5387,14 +5390,27 @@ function startSession(){
   }
   sessionGP=gp; 
   sessionProfit=0;
+  state.session_start_gp = gp;
+  saveState();
   document.getElementById('gp-modal').classList.add('hidden');
   render();
 }
 
 function newSession(){
+  if (state.session_start_gp > 0) {
+    sessionGP = Number(state.session_start_gp) || 0;
+    sessionProfit=0;
+    render();
+    return;
+  }
   document.getElementById('gp-input').value='';
   document.getElementById('gp-modal').classList.remove('hidden');
   sessionProfit=0;
+}
+
+function changeSessionStart(){
+  document.getElementById('gp-input').value = state.session_start_gp ? String(state.session_start_gp) : '';
+  document.getElementById('gp-modal').classList.remove('hidden');
 }
 
 async function switchTab(tab){

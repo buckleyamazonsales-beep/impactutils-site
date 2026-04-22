@@ -311,7 +311,10 @@
       <div class="sdivider"></div>
       <div class="session-row"><span class="slabel">All-time profit</span><span class="sval green" id="sb-alltime">0 GP</span></div>
       <div class="sdivider"></div>
-      <button class="btn-sm" onclick="newSession()">↺ New session</button>
+      <div class="btn-row">
+        <button class="btn-sm" onclick="newSession()">↺ New session</button>
+        <button class="btn-sm" onclick="changeSessionStart()">Edit start</button>
+      </div>
     </div>
     <div class="session-block compact-block" style="border-top:1px solid var(--border);">
       <button class="account-summary" id="sidebar-account-toggle" onclick="toggleSidebarAccount()" type="button">
