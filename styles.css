@@ -24,6 +24,14 @@
     radial-gradient(circle at top right, var(--bg-glow-2), transparent 24%),
     linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 38%, var(--bg-bottom) 100%);
     color:var(--text);font-family:'Syne',sans-serif;font-size:14px;min-height:100vh;transition:background 0.3s, color 0.3s;letter-spacing:0.01em;}
+  body.deploy-test-mode{background:
+    repeating-linear-gradient(-45deg, rgba(255,209,102,0.09) 0 18px, rgba(255,122,89,0.1) 18px 36px),
+    radial-gradient(circle at top left, rgba(255,209,102,0.18), transparent 30%),
+    radial-gradient(circle at top right, rgba(255,122,89,0.14), transparent 24%),
+    linear-gradient(180deg, #2b120b 0%, #140c09 45%, #120b08 100%);}
+  .deploy-test-banner{position:sticky;top:0;z-index:250;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 22px;background:repeating-linear-gradient(135deg, #ffd166 0 18px, #ff7a59 18px 36px);border-bottom:3px solid rgba(7,19,26,0.8);box-shadow:0 12px 30px rgba(0,0,0,0.28);color:#1f130d;}
+  .deploy-test-banner-label{font-size:22px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;}
+  .deploy-test-banner-copy{font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:700;line-height:1.6;max-width:72ch;}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:100;}
   .modal-overlay.hidden{display:none;}
   .hidden{display:none !important;}
@@ -40,6 +48,7 @@
   .modal-hint{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--hint);margin-bottom:20px;line-height:1.7;}
   .modal-hint span{color:var(--muted);}
   .app{display:grid;grid-template-columns:minmax(260px, 288px) 1fr;min-height:100vh;}
+  body.deploy-test-mode .app{outline:6px solid #ffd166;outline-offset:-6px;box-shadow:inset 0 0 0 6px rgba(255,122,89,0.75);}
   .sidebar-brand{padding:0 20px 16px;margin-bottom:12px;border-bottom:1px solid var(--border);position:relative;}
   .sidebar-brand::after{content:'';display:block;width:100%;height:1px;margin-top:12px;background:linear-gradient(90deg, rgba(61,217,197,0.92), rgba(255,209,102,0.34), transparent);}
   .sidebar-brand-kicker{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:5px;}
@@ -69,6 +78,7 @@
   .nav-item.active .nav-icon{opacity:1;}
   .session-block{padding:16px 20px;border-top:1px solid var(--border);margin-top:auto;background:linear-gradient(180deg, transparent, rgba(255,255,255,0.03));}
   .sidebar-version-block{padding:14px 20px 18px;border-top:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);}
+  .sidebar-version-block.deploy-test-live{background:linear-gradient(135deg, rgba(255,209,102,0.18), rgba(61,217,197,0.1) 55%, transparent);box-shadow:inset 0 0 0 1px rgba(255,209,102,0.18);}
   .sidebar-version-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
   .sidebar-version-value{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.04em;word-break:break-word;}
   .session-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
@@ -96,6 +106,7 @@
   .account-plan-cta{flex-shrink:0;white-space:nowrap;padding-left:12px;padding-right:12px;}
   .account-plan-description{margin:0;font-size:12px;line-height:1.65;color:var(--muted);font-family:'Syne',sans-serif;letter-spacing:0.02em;}
   .inline-notice{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:18px;border:1px solid var(--border2);background:linear-gradient(135deg, rgba(255,209,102,0.08), rgba(61,217,197,0.05));margin-bottom:20px;}
+  body.deploy-test-mode .inline-notice{border:2px solid rgba(255,122,89,0.65);background:linear-gradient(135deg, rgba(255,209,102,0.18), rgba(255,122,89,0.14));}
   .inline-notice-title{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--amber);text-transform:uppercase;letter-spacing:0.14em;min-width:76px;padding-top:2px;}
   .inline-notice-copy{font-size:12px;line-height:1.75;color:var(--muted);}
   .ad-slot{position:relative;padding:16px;border-radius:18px;border:1px dashed var(--border2);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));overflow:hidden;}
@@ -123,6 +134,7 @@
   .btn-sm:hover{color:var(--text);background:var(--surface2);border-color:var(--accent);}
   .panel{display:none;}.panel.active{display:block;}
   .page-header{margin-bottom:30px;padding:22px 24px;border:1px solid var(--border);border-radius:24px;background:linear-gradient(135deg, rgba(61,217,197,0.11), rgba(255,209,102,0.07) 55%, rgba(255,255,255,0.02));box-shadow:var(--shadow);}
+  body.deploy-test-mode .page-header{border:2px solid rgba(255,209,102,0.75);background:linear-gradient(135deg, rgba(255,209,102,0.2), rgba(255,122,89,0.16) 55%, rgba(255,255,255,0.03));}
   .page-title{font-size:30px;font-weight:700;margin-bottom:6px;letter-spacing:0.02em;}
   .page-subtitle{font-size:13px;color:var(--muted);font-family:'IBM Plex Mono',monospace;max-width:60ch;line-height:1.6;}
   .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
@@ -212,6 +224,12 @@
   .goal-showcase input::placeholder{color:rgba(239,254,254,0.5);}
   .goal-showcase .goal-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);}
   .goal-showcase .goal-btn.primary-action{background:#f1fffc;color:#08272c;border-color:transparent;}
+
+  @media (max-width: 900px){
+    .deploy-test-banner{padding:12px 14px;flex-direction:column;align-items:flex-start;}
+    .deploy-test-banner-label{font-size:18px;}
+    .deploy-test-banner-copy{font-size:11px;}
+  }
   
   .fav-btn{padding:12px 16px;background:var(--accent-bg);border:1px solid var(--border2);border-radius:16px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;}
   .fav-btn:hover{background:linear-gradient(135deg, var(--accent), var(--accent-2));color:#042126;border-color:transparent;}
