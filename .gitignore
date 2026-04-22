@@ -4,6 +4,8 @@ node_modules/
 api/stripe-secrets.php
 api/lemon-secrets.php
 api/data/
+!api/data/
+!api/data/community-state.json
 api/data/site-users.json
 api/data/ratelimit-*.json
 .DS_Store
