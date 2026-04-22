@@ -705,7 +705,6 @@ async function syncCommunityStateFromServer() {
       throw new Error(data.error || `Community sync failed (${res.status}).`);
     }
     applyCommunityStatePayload(data);
-    lastCommunitySnapshot = getCommunitySnapshot();
     return true;
   } catch (e) {
     console.warn('syncCommunityStateFromServer', e);
@@ -810,10 +809,11 @@ function startCommunityPolling() {
   if (communityPollTimer) return;
   communityPollTimer = setInterval(async () => {
     if (document.hidden || !isCommunityPanelActive()) return;
+    const previousSnapshot = getCommunitySnapshot();
     const synced = await syncCommunityStateFromServer();
     if (!synced) return;
     const nextSnapshot = getCommunitySnapshot();
-    if (nextSnapshot === lastCommunitySnapshot) return;
+    if (nextSnapshot === previousSnapshot) return;
     lastCommunitySnapshot = nextSnapshot;
     refreshCommunityViewsFromState();
   }, 5000);
