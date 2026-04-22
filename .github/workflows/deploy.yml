@@ -28,11 +28,33 @@ jobs:
           set sftp:auto-confirm yes
           set ssl:verify-certificate no
           cd "$SFTP_REMOTE_PATH"
+          mkdir -p "$SFTP_REMOTE_PATH/api"
+          mkdir -p "$SFTP_REMOTE_PATH/api/data"
           put -O "$SFTP_REMOTE_PATH" index.html
           put -O "$SFTP_REMOTE_PATH" styles.css
           put -O "$SFTP_REMOTE_PATH" app.js
           put -O "$SFTP_REMOTE_PATH" version.json
           put -O "$SFTP_REMOTE_PATH" logo.png
-          mirror -R api "$SFTP_REMOTE_PATH/api"
+          put -O "$SFTP_REMOTE_PATH/api" api/.htaccess
+          put -O "$SFTP_REMOTE_PATH/api" api/admin-lemon-status.php
+          put -O "$SFTP_REMOTE_PATH/api" api/admin-site-users.php
+          put -O "$SFTP_REMOTE_PATH/api" api/admin-stripe-status.php
+          put -O "$SFTP_REMOTE_PATH/api" api/billing-status.php
+          put -O "$SFTP_REMOTE_PATH/api" api/create-checkout-session.php
+          put -O "$SFTP_REMOTE_PATH/api" api/create-portal-session.php
+          put -O "$SFTP_REMOTE_PATH/api" api/forgot-password.php
+          put -O "$SFTP_REMOTE_PATH/api" api/hiscores.php
+          put -O "$SFTP_REMOTE_PATH/api" api/lemon-env.php
+          put -O "$SFTP_REMOTE_PATH/api" api/lemon-secrets.example.php
+          put -O "$SFTP_REMOTE_PATH/api" api/lemonsqueezy-webhook.php
+          put -O "$SFTP_REMOTE_PATH/api" api/recover-billing.php
+          put -O "$SFTP_REMOTE_PATH/api" api/send-verification-email.php
+          put -O "$SFTP_REMOTE_PATH/api" api/site-user-register.php
+          put -O "$SFTP_REMOTE_PATH/api" api/stripe-billing.php
+          put -O "$SFTP_REMOTE_PATH/api" api/stripe-secrets.example.php
+          put -O "$SFTP_REMOTE_PATH/api" api/stripe-secrets.php
+          put -O "$SFTP_REMOTE_PATH/api" api/stripe-webhook.php
+          put -O "$SFTP_REMOTE_PATH/api" api/verify-checkout-session.php
+          put -O "$SFTP_REMOTE_PATH/api/data" api/data/.gitkeep
           bye
           EOF
