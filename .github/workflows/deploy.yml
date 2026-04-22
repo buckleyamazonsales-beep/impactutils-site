@@ -24,5 +24,6 @@ jobs:
             ./index.html => ${{ secrets.SFTP_REMOTE_PATH }}/index.html
             ./styles.css => ${{ secrets.SFTP_REMOTE_PATH }}/styles.css
             ./app.js => ${{ secrets.SFTP_REMOTE_PATH }}/app.js
+            ./version.json => ${{ secrets.SFTP_REMOTE_PATH }}/version.json
             ./logo.png => ${{ secrets.SFTP_REMOTE_PATH }}/logo.png
             ./api/ => ${{ secrets.SFTP_REMOTE_PATH }}/api/
