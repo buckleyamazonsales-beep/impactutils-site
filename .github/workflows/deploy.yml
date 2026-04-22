@@ -22,8 +22,8 @@ jobs:
           UPDATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           export VERSION UPDATED_AT
 
-          perl -0pi -e "s#styles\\.css\\?v=[^\"']+#styles.css?v=$ENV{VERSION}#g; s#app\\.js\\?v=[^\"']+#app.js?v=$ENV{VERSION}#g" index.html
-          perl -0pi -e "s/const SITE_VERSION = '[^']+';/const SITE_VERSION = '$ENV{VERSION}';/" app.js
+          perl -0pi -e "s#styles\\.css\\?v=[^\"']+#styles.css?v=\$ENV{VERSION}#g; s#app\\.js\\?v=[^\"']+#app.js?v=\$ENV{VERSION}#g" index.html
+          perl -0pi -e "s/const SITE_VERSION = '[^']+';/const SITE_VERSION = '\$ENV{VERSION}';/" app.js
 
           cat > version.json <<EOF
           {
