@@ -123,6 +123,32 @@ const SLAYER_TASKS = [
   { name: "Zulrah", tier: "elite", guide: "Verified wiki support available. This page includes setup images and a guide video." }
 ];
 
+const SLAYER_MAP_LINKS = {
+  'Amoxliatl': ['Amoxliatl'],
+  'Araxxor': ['Morytania Spider Cave'],
+  'Barrows': ['Barrows'],
+  'Callisto': ['Callisto'],
+  'Cerberus': ['Taverley Dungeon'],
+  'Chaos Fanatic': ['Chaos Temple'],
+  'Corporeal Beast': ['Corporeal Beast'],
+  'Crazy Archaeologist': ['Graveyard Of Shadows'],
+  'Doom of Mokhaiotl': ['Doom of Mokhaiotl'],
+  'Duke Sucellus': ['Duke Sucellus'],
+  'King Black Dragon': ['Ferox Enclave'],
+  'Kraken': ['Kraken Cove'],
+  'Leviathan': ['Leviathan'],
+  'Nex': ['Godwars'],
+  'Phantom Muspah': ['Phantom Muspah'],
+  'Skotizo': ['Catacombs'],
+  'Vardovis': ['Vardorvis'],
+  "Vet'ion": ['Revenants'],
+  'Vorkath': ['Vorkath'],
+  'Whisperer': ['The Whisperer'],
+  'Xamphur': ['Xamphur'],
+  'Yama': ['Yama'],
+  'Zulrah': ['Zulrah']
+};
+
 const IMPACT_SKILLING_GUIDES = [
   { name: "Agility", icon: "🏃", wiki: "https://impactmmo.wiki/Agility", focus: "Fastest route: Gnome Course into Wilderness Course.", routes: [
     { from: 1, to: 52, method: "Gnome Course", detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
@@ -2569,6 +2595,20 @@ function selectMapDestinationByName(name) {
   mapCategoryMode = row.category || 'All';
   selectedTeleportId = row.id;
   renderMaps();
+}
+
+function openMapsForDestination(name) {
+  selectMapDestinationByName(name);
+  switchTab('maps');
+}
+
+function getSlayerMapTargets(taskName) {
+  const direct = SLAYER_MAP_LINKS[taskName];
+  if (Array.isArray(direct) && direct.length) return direct;
+  const exact = getTeleportDirectory().find(entry => normalizeMapName(entry.name) === normalizeMapName(taskName));
+  if (exact) return [exact.name];
+  const dungeonMatches = getDungeonLinksForMonster(taskName);
+  return dungeonMatches;
 }
 
 function getTeleportDirectory() {
@@ -7614,11 +7654,13 @@ function showTaskGuide(){
   const summary = document.getElementById('slayer-guide-summary');
   const favoriteState = document.getElementById('slayer-favorite-state');
   const noteField = document.getElementById('slayer-note');
+  const mapLinks = document.getElementById('slayer-map-links');
   if(!meta){
     document.getElementById('slayer-guide').textContent = 'Choose a task to see route and tips.';
     if(summary) summary.textContent = 'This section only includes bosses with verified wiki guide coverage.';
     if(favoriteState) favoriteState.innerHTML = 'Not Favorited';
     if(noteField) noteField.value = '';
+    if(mapLinks) mapLinks.innerHTML = '';
     updateSlayerAccessUI('');
     renderBossMediaSection('');
     return;
@@ -7631,15 +7673,22 @@ function showTaskGuide(){
     }
     if(favoriteState) favoriteState.innerHTML = 'Pro only';
     if(noteField) noteField.value = '';
+    if(mapLinks) mapLinks.innerHTML = '';
     updateSlayerAccessUI(task);
     renderBossMediaSection('');
     return;
   }
   const tierLabel = meta.tier === 'normal' ? 'Normal' : meta.tier === 'hard' ? 'Hard' : 'Elite';
   const personalNote = state.slayer_notes?.[task];
+  const targets = getSlayerMapTargets(task);
   document.getElementById('slayer-guide').innerHTML = `${meta.guide}<br><span style="color:var(--hint);">${tierLabel} task bracket. Search lets you jump straight to any supported task.</span>${personalNote ? `<br><br><span style="color:var(--text);">Saved note:</span> <span style="color:var(--muted);">${personalNote}</span>` : ''}`;
   if(summary){
     summary.innerHTML = `<span class="guide-pill"><strong>Wiki Ready</strong> Verified media from the Impact wiki is available below</span>`;
+  }
+  if(mapLinks){
+    mapLinks.innerHTML = targets.length
+      ? `<div class="maps-mini-heading">Map Links</div><div class="map-monster-chip-grid">${targets.map(name => `<button type="button" class="map-monster-chip route" onclick='openMapsForDestination(${inlineJsString(name)})'>${escapeHtml(name)}</button>`).join('')}</div>`
+      : '<div class="maps-mini-heading">Map Links</div><div class="profit-preview" style="margin-top:0;">No linked map yet for this Slayer task.</div>';
   }
   if(favoriteState){
     favoriteState.innerHTML = state.slayer_favorites.includes(task) ? 'Favorited Boss' : 'Not Favorited';
