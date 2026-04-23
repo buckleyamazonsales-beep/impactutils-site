@@ -126,6 +126,25 @@ const SLAYER_TASKS = [
   { name: "Zulrah", tier: "elite", guide: "Verified wiki support available. This page includes setup images and a guide video." }
 ];
 
+const IMPACT_SKILLING_GUIDES = [
+  { name: "Agility", wiki: "https://impactmmo.wiki/Agility", focus: "Movement, shortcuts, and stamina-friendly route planning." },
+  { name: "Cooking", wiki: "https://impactmmo.wiki/Cooking", focus: "Food progression, cooking spots, and efficient 1-99 food choices." },
+  { name: "Crafting", wiki: "https://impactmmo.wiki/Crafting", focus: "Material processing, jewelry-style unlocks, and item creation routes." },
+  { name: "Farming", wiki: "https://impactmmo.wiki/Farming", focus: "Patch cycles, seed planning, and passive XP checkpoints." },
+  { name: "Firemaking", wiki: "https://impactmmo.wiki/Firemaking", focus: "Log burn progression and simple level-bracket tracking." },
+  { name: "Fishing", wiki: "https://impactmmo.wiki/Fishing", focus: "Fishing spots, catch upgrades, and food supply progression." },
+  { name: "Fletching", wiki: "https://impactmmo.wiki/Fletching", focus: "Bow, dart, and arrow-style production milestones." },
+  { name: "Herblore", wiki: "https://impactmmo.wiki/Herblore", focus: "Potion unlocks, herb planning, and supply-heavy progression." },
+  { name: "Hunter", wiki: "https://impactmmo.wiki/Hunter", focus: "Creature routes, trap unlocks, and money-making options." },
+  { name: "Mining", wiki: "https://impactmmo.wiki/Mining", focus: "Ore progression, pickaxe upgrades, and gathering routes." },
+  { name: "Prayer", wiki: "https://impactmmo.wiki/Prayer", focus: "Bone usage, altar access, and unlock-driven progression." },
+  { name: "Runecrafting", wiki: "https://impactmmo.wiki/Runecrafting", focus: "Abyss access, dense essence, blood/soul rune milestones, and Sunfire alternatives." },
+  { name: "Slayer", wiki: "https://impactmmo.wiki/Slayer", focus: "Task unlocks, boss routing, and Slayer-specific 1-99 planning." },
+  { name: "Smithing", wiki: "https://impactmmo.wiki/Smithing", focus: "Bars, anvils, equipment creation, and production milestones." },
+  { name: "Thieving", wiki: "https://impactmmo.wiki/Thieving", focus: "Pickpocket/stall routes and GP-oriented training checkpoints." },
+  { name: "Woodcutting", wiki: "https://impactmmo.wiki/Woodcutting", focus: "Tree unlocks, axe progression, and AFK-friendly gathering." }
+];
+
 const STRATEGY_LIBRARY = {
   conservative: {
     label: "Conservative fixed fractional",
@@ -1230,6 +1249,7 @@ function loadState(){
     fp_items:[],
     slayer_favorites:[],
     slayer_notes:{},
+    skilling_levels:{},
     slayer_logs:[],
     fp_logs:[],
     transfers:[],
@@ -4446,6 +4466,11 @@ function normalizeState(){
   state.fp_items = Array.isArray(state.fp_items) ? state.fp_items : [];
   state.slayer_favorites = Array.isArray(state.slayer_favorites) ? state.slayer_favorites : [];
   state.slayer_notes = state.slayer_notes || {};
+  state.skilling_levels = state.skilling_levels && typeof state.skilling_levels === 'object' ? state.skilling_levels : {};
+  IMPACT_SKILLING_GUIDES.forEach(skill => {
+    const level = Math.round(Number(state.skilling_levels[skill.name]) || 1);
+    state.skilling_levels[skill.name] = Math.max(1, Math.min(99, level));
+  });
   state.slayer_logs = Array.isArray(state.slayer_logs) ? state.slayer_logs : [];
   state.fp_logs = Array.isArray(state.fp_logs) ? state.fp_logs : [];
   state.transfers = Array.isArray(state.transfers) ? state.transfers : [];
@@ -7615,6 +7640,104 @@ function renderSession(){
   document.getElementById('sb-alltime').className='sval '+(t>=0?'green':'red');
 }
 
+function getSkillingLevel(skillName){
+  return Math.max(1, Math.min(99, Math.round(Number(state.skilling_levels?.[skillName]) || 1)));
+}
+
+function getNextSkillingMilestone(level){
+  const next = GENERAL_SKILL_STEP_TARGETS.find(target => target > level);
+  return next || 99;
+}
+
+function updateSkillingLevel(skillName, value){
+  state.skilling_levels = state.skilling_levels || {};
+  state.skilling_levels[skillName] = Math.max(1, Math.min(99, Math.round(Number(value) || 1)));
+  saveState();
+  renderSkilling();
+}
+
+function markSkill99(skillName){
+  updateSkillingLevel(skillName, 99);
+}
+
+function resetSkillingLevels(){
+  state.skilling_levels = {};
+  IMPACT_SKILLING_GUIDES.forEach(skill => {
+    state.skilling_levels[skill.name] = 1;
+  });
+  saveState();
+  renderSkilling();
+}
+
+function renderSkilling(){
+  state.skilling_levels = state.skilling_levels || {};
+  const search = String(document.getElementById('skilling-search')?.value || '').trim().toLowerCase();
+  const sort = document.getElementById('skilling-sort')?.value || 'wiki';
+  const skills = IMPACT_SKILLING_GUIDES.map((skill, index) => ({
+    ...skill,
+    index,
+    level: getSkillingLevel(skill.name)
+  }));
+
+  const totalLevel = skills.reduce((sum, skill) => sum + skill.level, 0);
+  const maxed = skills.filter(skill => skill.level >= 99).length;
+  const remaining = skills.reduce((sum, skill) => sum + Math.max(0, 99 - skill.level), 0);
+
+  const totalEl = document.getElementById('skilling-total-skills');
+  const maxedEl = document.getElementById('skilling-maxed-count');
+  const avgEl = document.getElementById('skilling-average-level');
+  const remainingEl = document.getElementById('skilling-remaining-levels');
+  if(totalEl) totalEl.textContent = skills.length;
+  if(maxedEl) maxedEl.textContent = maxed;
+  if(avgEl) avgEl.textContent = (totalLevel / Math.max(1, skills.length)).toFixed(1);
+  if(remainingEl) remainingEl.textContent = remaining;
+
+  let visible = skills.filter(skill => !search || skill.name.toLowerCase().includes(search) || skill.focus.toLowerCase().includes(search));
+  if(sort === 'lowest') visible.sort((a, b) => a.level - b.level || a.index - b.index);
+  if(sort === 'highest') visible.sort((a, b) => b.level - a.level || a.index - b.index);
+  if(sort === 'az') visible.sort((a, b) => a.name.localeCompare(b.name));
+
+  const grid = document.getElementById('skilling-grid');
+  if(!grid) return;
+  if(!visible.length){
+    grid.innerHTML = '<div class="empty">No skilling guides match that search.</div>';
+    return;
+  }
+
+  grid.innerHTML = visible.map(skill => {
+    const progress = Math.round(((skill.level - 1) / 98) * 100);
+    const nextMilestone = getNextSkillingMilestone(skill.level);
+    const status = skill.level >= 99 ? 'Maxed' : `Next ${nextMilestone}`;
+    const safeName = escapeHtml(skill.name);
+    const safeFocus = escapeHtml(skill.focus);
+    return `
+      <div class="skilling-card ${skill.level >= 99 ? 'maxed' : ''}">
+        <div class="skilling-card-top">
+          <div>
+            <div class="skilling-kicker">Impact Wiki 1-99</div>
+            <div class="skilling-title">${safeName}</div>
+          </div>
+          <div class="skilling-level-badge">${skill.level}</div>
+        </div>
+        <div class="skilling-focus">${safeFocus}</div>
+        <div class="skilling-progress-row">
+          <span>Level ${skill.level}</span>
+          <span>${status}</span>
+        </div>
+        <div class="progress-bar skilling-progress"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <div class="skilling-card-actions">
+          <label class="skilling-level-input">
+            Current level
+            <input type="number" min="1" max="99" value="${skill.level}" onchange="updateSkillingLevel('${safeName}', this.value)">
+          </label>
+          <button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>
+          <a class="btn-sm skilling-wiki-btn" href="${skill.wiki}" target="_blank" rel="noopener">Wiki Guide</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderPanel(tab){
   const d=new Date();
   document.getElementById('log-date').textContent=d.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -7628,6 +7751,7 @@ function renderPanel(tab){
     renderGoals();
   }
   if(tab==='log') renderFavorites();
+  if(tab==='skilling') renderSkilling();
   if(tab==='marketplace') renderMarketplace();
   if(tab==='moderation') renderModerationPanel();
   if (tab === 'admin') {
