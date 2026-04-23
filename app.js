@@ -2505,6 +2505,53 @@ const IMPACT_MENU_TELEPORTS = [
   updated_by: 'OBS teleport recording'
 }));
 
+const DUNGEON_MONSTER_LINKS = {
+  'Morytania Spider Cave': ['Araxxor', 'Araxytes', 'Spiders'],
+  'Godwars': ['General Graardor', "Kree'arra", "K'ril Tsutsaroth", 'Commander Zilyana', 'God wars minions'],
+  'Catacombs': ['Dagannoth', 'Nechryael', 'Greater demons', 'Abyssal demons', 'Dust devils', 'Bloodvelds'],
+  'Ancient Guthixian Temple': ['Tormented demons'],
+  'Crash Site Cavern': ['Demonic gorillas', 'Tortured gorillas'],
+  "Zemouregal's Base": ['Armoured zombies', 'Zemouregal undead'],
+  'Iorwerth Dungeon': ['Dark beasts', 'Elves', 'Kurasks'],
+  "Jormungand's Prison": ['Basilisks', 'Basilisk knights'],
+  'Kraken Cove': ['Kraken', 'Cave kraken'],
+  'Ancient Cavern': ['Mithril dragons', 'Brutal green dragons', 'Waterfiends'],
+  'Wyvern Cave': ['Skeletal wyverns', 'Ancient wyverns', 'Long-tailed wyverns'],
+  'Brimhaven Dungeon': ['Red dragons', 'Black demons', 'Metal dragons', 'Greater demons'],
+  'Taverley Dungeon': ['Blue dragons', 'Black demons', 'Hellhounds', 'Lesser demons'],
+  'Waterfall Dungeon': ['Fire giants', 'Moss giants', 'Skeletons'],
+  'Asgarnian Ice Dungeon': ['Ice warriors', 'Ice giants', 'Skeletal wyverns']
+};
+
+function normalizeMapName(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function getDungeonMonsterLinks(destinationName) {
+  const target = normalizeMapName(destinationName);
+  const key = Object.keys(DUNGEON_MONSTER_LINKS).find(name => normalizeMapName(name) === target);
+  return key ? DUNGEON_MONSTER_LINKS[key] : [];
+}
+
+function getDungeonLinksForMonster(monsterName) {
+  const monster = normalizeMapName(monsterName);
+  return Object.entries(DUNGEON_MONSTER_LINKS)
+    .filter(([, monsters]) => monsters.some(entry => {
+      const linked = normalizeMapName(entry);
+      return linked === monster || linked.includes(monster) || monster.includes(linked);
+    }))
+    .map(([dungeon]) => dungeon);
+}
+
+function selectMapDestinationByName(name) {
+  const target = normalizeMapName(name);
+  const row = getTeleportDirectory().find(entry => normalizeMapName(entry.name) === target);
+  if (!row) return;
+  mapCategoryMode = row.category || 'All';
+  selectedTeleportId = row.id;
+  renderMaps();
+}
+
 function getTeleportDirectory() {
   const map = new Map();
   IMPACT_MENU_TELEPORTS.forEach(row => map.set(row.id, row));
@@ -2562,6 +2609,26 @@ function renderMaps() {
       <small>${escapeHtml(row.use_case || row.path || 'Teleport destination')}</small>
     </button>
   `).join('');
+  const dungeonMonsters = selected ? getDungeonMonsterLinks(selected.name) : [];
+  const monsterDungeons = selected?.category !== 'Dungeons' ? getDungeonLinksForMonster(selected.name) : [];
+  const dungeonMarkup = dungeonMonsters.length ? `
+    <div class="map-linked-panel">
+      <div class="maps-mini-heading">Dungeon Monsters</div>
+      <div class="map-monster-chip-grid">
+        ${dungeonMonsters.map(monster => `<button type="button" class="map-monster-chip" onclick='selectMapDestinationByName(${inlineJsString(monster)})'>${escapeHtml(monster)}</button>`).join('')}
+      </div>
+      <p>Monster list is linked from the current dungeon route and should be expanded as we verify Impact-specific spawns.</p>
+    </div>
+  ` : '';
+  const monsterRouteMarkup = monsterDungeons.length ? `
+    <div class="map-linked-panel">
+      <div class="maps-mini-heading">Dungeon Routes</div>
+      <div class="map-monster-chip-grid">
+        ${monsterDungeons.map(dungeon => `<button type="button" class="map-monster-chip route" onclick='selectMapDestinationByName(${inlineJsString(dungeon)})'>${escapeHtml(dungeon)}</button>`).join('')}
+      </div>
+      <p>These are matching dungeon teleports for this monster.</p>
+    </div>
+  ` : '';
   detail.innerHTML = selected ? `
     <div class="map-detail-card ${selected.verified ? 'verified' : 'unverified'}">
       <div class="map-detail-top">
@@ -2579,6 +2646,8 @@ function renderMaps() {
         <div><span>Status</span><strong>${selected.verified ? 'Video extracted' : 'Needs verification'}</strong></div>
       </div>
       ${selected.notes ? `<div class="map-notes">${escapeHtml(selected.notes)}</div>` : ''}
+      ${dungeonMarkup}
+      ${monsterRouteMarkup}
       ${isAdminUser() && !String(selected.id || '').startsWith('impact-') ? `<button class="btn-sm" onclick='editTeleportFromAdmin(${inlineJsString(selected.id)});switchTab("admin")'>Edit in Admin</button>` : ''}
     </div>
   ` : '';
