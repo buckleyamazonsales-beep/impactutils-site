@@ -270,18 +270,27 @@
   .skilling-source-link{text-decoration:none;white-space:nowrap;}
   .skilling-control-card{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;}
   .skilling-copy{font-size:13px;line-height:1.7;color:var(--muted);max-width:62ch;}
-  .skilling-controls{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;align-items:center;min-width:min(100%,620px);}
+  .skilling-controls{display:grid;grid-template-columns:minmax(180px,1fr) 150px 160px auto;gap:10px;align-items:center;min-width:min(100%,760px);}
   .skilling-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
   .skilling-card{position:relative;overflow:hidden;padding:20px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(145deg, rgba(13,40,51,0.96), rgba(9,25,34,0.98));box-shadow:var(--shadow);}
   .skilling-card::after{content:'';position:absolute;right:-50px;bottom:-60px;width:150px;height:150px;border-radius:999px;background:radial-gradient(circle, rgba(61,217,197,0.16), transparent 68%);pointer-events:none;}
   .skilling-card.maxed{border-color:var(--green-border);background:linear-gradient(145deg, rgba(18,62,50,0.96), rgba(8,32,34,0.98));}
   .skilling-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;position:relative;z-index:1;}
+  .skilling-title-wrap{display:flex;align-items:center;gap:12px;min-width:0;}
+  .skilling-logo{width:50px;height:50px;border-radius:18px;border:1px solid var(--border2);display:grid;place-items:center;background:linear-gradient(135deg, rgba(61,217,197,0.14), rgba(255,209,102,0.08));font-size:26px;box-shadow:0 12px 26px rgba(0,0,0,0.16);}
   .skilling-kicker{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;}
   .skilling-title{font-size:24px;font-weight:700;line-height:1.1;}
   .skilling-level-badge{width:52px;height:52px;border-radius:18px;border:1px solid var(--border2);background:var(--accent-bg);display:grid;place-items:center;font-size:20px;font-weight:800;color:var(--accent);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
   .skilling-focus{min-height:52px;font-size:12px;line-height:1.7;color:var(--muted);margin-bottom:16px;position:relative;z-index:1;}
   .skilling-progress-row{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.08em;position:relative;z-index:1;}
   .skilling-progress{position:relative;z-index:1;margin:10px 0 16px;}
+  .skilling-next-step{position:relative;z-index:1;padding:14px 15px;border-radius:18px;border:1px solid var(--border2);background:rgba(255,255,255,0.035);margin-bottom:12px;}
+  .skilling-next-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px;}
+  .skilling-next-title{font-size:16px;font-weight:800;margin-bottom:5px;}
+  .skilling-next-copy{font-size:12px;line-height:1.65;color:var(--muted);}
+  .skilling-route-list{position:relative;z-index:1;display:grid;gap:7px;margin-bottom:14px;}
+  .skilling-route-step{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.025);font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+  .skilling-route-step strong{color:var(--text);font-weight:600;text-align:right;}
   .skilling-card-actions{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;position:relative;z-index:1;}
   .skilling-level-input{display:grid;gap:6px;min-width:122px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
   .skilling-level-input input{height:36px;padding:7px 10px;border-radius:999px;}
@@ -296,6 +305,15 @@
   .dashboard-pro-price{font-size:30px;font-weight:700;margin-bottom:8px;}
   .dashboard-pro-copy{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px;}
   .dashboard-pro-list{display:grid;gap:10px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text);margin-bottom:16px;}
+  .dashboard-username-card{display:grid;grid-template-columns:1fr minmax(320px,520px);gap:16px;align-items:end;border-color:rgba(61,217,197,0.24);}
+  .dashboard-username-copy{font-size:13px;line-height:1.7;color:var(--muted);}
+  .dashboard-username-tools{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
+  .dashboard-username-status{grid-column:1 / -1;font-size:12px;color:var(--muted);}
+  .saved-username-list{grid-column:1 / -1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:34px;}
+  .saved-username-pill{padding:8px 12px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;}
+  .saved-username-pill.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);}
+  .saved-username-remove{width:28px;height:28px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,0.02);color:var(--muted);cursor:pointer;margin-left:-6px;}
+  .empty.compact{padding:0;text-align:left;}
   .premium-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:22px;border:1px solid var(--border2);background:linear-gradient(135deg, rgba(61,217,197,0.1), rgba(255,209,102,0.08) 60%, rgba(255,255,255,0.03));margin-bottom:16px;}
   .premium-banner-title{font-size:14px;font-weight:700;margin-bottom:4px;}
   .premium-banner-copy{font-size:12px;line-height:1.7;color:var(--muted);max-width:760px;}
@@ -394,6 +412,8 @@
     .sidebar{position:static;height:auto;}
     .stat-grid{grid-template-columns:1fr 1fr;}
     .split-grid{grid-template-columns:1fr;}
+    .dashboard-username-card{grid-template-columns:1fr;}
+    .dashboard-username-tools{grid-template-columns:1fr;}
     .stats-reset-grid{grid-template-columns:1fr;}
     .boss-media-grid{grid-template-columns:1fr;}
     .skilling-header{flex-direction:column;align-items:flex-start;}

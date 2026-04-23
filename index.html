@@ -84,7 +84,7 @@
     </div>
     <div id="hiscores-status-modal"></div>
     <div class="btn-row">
-      <button class="btn primary" onclick="fetchHiscores()" style="flex:1;">Import Stats</button>
+      <button class="btn primary" onclick="fetchHiscores({ sourceId:'username-input-modal', statusId:'hiscores-status-modal' })" style="flex:1;">Import Stats</button>
       <button class="btn" onclick="closeHiscoresModal()">Cancel</button>
     </div>
   </div>
@@ -392,6 +392,19 @@
         <div class="stat-card"><div class="stat-card-label">FP Bankroll + Items</div><div class="stat-card-value amber" id="dash-bankroll">—</div></div>
         <div class="stat-card"><div class="stat-card-label">Active Goals</div><div class="stat-card-value" id="dash-active-goals">0</div></div>
         <div class="stat-card"><div class="stat-card-label">Supported Bosses</div><div class="stat-card-value" id="dash-guide-bosses">0</div></div>
+      </div>
+
+      <div class="card dashboard-username-card">
+        <div>
+          <div class="card-title">Account Stats</div>
+          <div class="dashboard-username-copy">Set a username once, then use it across Goals and Skilling. Recent usernames are saved here for quick switching.</div>
+        </div>
+        <div class="dashboard-username-tools">
+          <input type="text" id="dashboard-username-input" placeholder="Impact username">
+          <button class="btn primary" onclick="fetchHiscores({ sourceId:'dashboard-username-input', statusId:'dashboard-username-status', afterTab:'dashboard' })">Import Stats</button>
+        </div>
+        <div id="dashboard-saved-usernames" class="saved-username-list"></div>
+        <div id="dashboard-username-status" class="dashboard-username-status"></div>
       </div>
 
       <div class="split-grid">
@@ -869,18 +882,23 @@
 
       <div class="card skilling-control-card">
         <div>
-          <div class="card-title">Impact Wiki Guides</div>
-          <div class="skilling-copy">Track your current level for each skilling guide and jump straight to the official wiki route when you are ready to grind.</div>
+          <div class="card-title">Impact Wiki Routes</div>
+          <div class="skilling-copy">Levels come from imported account stats when available. Pick the type of route you want, then each skill shows your next step to 99.</div>
         </div>
         <div class="skilling-controls">
           <input type="text" id="skilling-search" placeholder="Search skills..." oninput="renderSkilling()">
+          <select id="skilling-mode" onchange="state.skilling_mode=this.value; saveState(); renderSkilling()">
+            <option value="fastest">Fastest</option>
+            <option value="money">Money Making</option>
+            <option value="middle">Middle</option>
+          </select>
           <select id="skilling-sort" onchange="renderSkilling()">
             <option value="wiki">Wiki order</option>
             <option value="lowest">Lowest level first</option>
             <option value="highest">Highest level first</option>
             <option value="az">A-Z</option>
           </select>
-          <button class="btn" onclick="resetSkillingLevels()">Reset Levels</button>
+          <button class="btn" onclick="switchTab('dashboard')">Set Username</button>
         </div>
       </div>
 

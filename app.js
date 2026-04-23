@@ -127,22 +127,122 @@ const SLAYER_TASKS = [
 ];
 
 const IMPACT_SKILLING_GUIDES = [
-  { name: "Agility", wiki: "https://impactmmo.wiki/Agility", focus: "Movement, shortcuts, and stamina-friendly route planning." },
-  { name: "Cooking", wiki: "https://impactmmo.wiki/Cooking", focus: "Food progression, cooking spots, and efficient 1-99 food choices." },
-  { name: "Crafting", wiki: "https://impactmmo.wiki/Crafting", focus: "Material processing, jewelry-style unlocks, and item creation routes." },
-  { name: "Farming", wiki: "https://impactmmo.wiki/Farming", focus: "Patch cycles, seed planning, and passive XP checkpoints." },
-  { name: "Firemaking", wiki: "https://impactmmo.wiki/Firemaking", focus: "Log burn progression and simple level-bracket tracking." },
-  { name: "Fishing", wiki: "https://impactmmo.wiki/Fishing", focus: "Fishing spots, catch upgrades, and food supply progression." },
-  { name: "Fletching", wiki: "https://impactmmo.wiki/Fletching", focus: "Bow, dart, and arrow-style production milestones." },
-  { name: "Herblore", wiki: "https://impactmmo.wiki/Herblore", focus: "Potion unlocks, herb planning, and supply-heavy progression." },
-  { name: "Hunter", wiki: "https://impactmmo.wiki/Hunter", focus: "Creature routes, trap unlocks, and money-making options." },
-  { name: "Mining", wiki: "https://impactmmo.wiki/Mining", focus: "Ore progression, pickaxe upgrades, and gathering routes." },
-  { name: "Prayer", wiki: "https://impactmmo.wiki/Prayer", focus: "Bone usage, altar access, and unlock-driven progression." },
-  { name: "Runecrafting", wiki: "https://impactmmo.wiki/Runecrafting", focus: "Abyss access, dense essence, blood/soul rune milestones, and Sunfire alternatives." },
-  { name: "Slayer", wiki: "https://impactmmo.wiki/Slayer", focus: "Task unlocks, boss routing, and Slayer-specific 1-99 planning." },
-  { name: "Smithing", wiki: "https://impactmmo.wiki/Smithing", focus: "Bars, anvils, equipment creation, and production milestones." },
-  { name: "Thieving", wiki: "https://impactmmo.wiki/Thieving", focus: "Pickpocket/stall routes and GP-oriented training checkpoints." },
-  { name: "Woodcutting", wiki: "https://impactmmo.wiki/Woodcutting", focus: "Tree unlocks, axe progression, and AFK-friendly gathering." }
+  { name: "Agility", icon: "🏃", wiki: "https://impactmmo.wiki/Agility", focus: "Fastest route: Gnome Course into Wilderness Course.", routes: [
+    { from: 1, to: 52, method: "Gnome Course", detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
+    { from: 52, to: 99, method: "Wilderness Course", detail: "Buy an Ice Plateau teleport from ::shops, run southeast to the course, and loop it for roughly 13k XP per lap." }
+  ] },
+  { name: "Cooking", icon: "🍳", wiki: "https://impactmmo.wiki/Cooking", focus: "Fastest route: shop food upgrades, then monkfish to 99.", routes: [
+    { from: 1, to: 40, method: "Fish and cook early food", detail: "Catch and cook shrimp/salmon until Shanomi food unlocks. Wear cooking gauntlets from ::shop." },
+    { from: 40, to: 50, method: "Raw Lobsters", detail: "Buy from Shanomi at ::shop and cook at ::di or Catherby range." },
+    { from: 50, to: 80, method: "Raw Swordfish", detail: "Buy from ::shop and cook in the closest bank route you have." },
+    { from: 80, to: 99, method: "Raw Monkfish", detail: "More efficient than swordfish from 80 onward. Sharks are optional but slower." }
+  ] },
+  { name: "Crafting", icon: "💎", wiki: "https://impactmmo.wiki/Crafting", focus: "Fastest route: gems from Shanomi, dragonstones/onyx when affordable.", routes: [
+    { from: 1, to: 16, method: "Opals", detail: "Cut opals bought from Shanomi at ::shops." },
+    { from: 16, to: 20, method: "Red Topaz", detail: "Move to red topaz for the next short bracket." },
+    { from: 20, to: 27, method: "Sapphires", detail: "Cut sapphires until emeralds unlock." },
+    { from: 27, to: 34, method: "Emeralds", detail: "Cut emeralds until ruby unlock." },
+    { from: 34, to: 43, method: "Rubies", detail: "Cut rubies to reach the main gem route." },
+    { from: 43, to: 55, method: "Diamonds", detail: "Use diamonds as the bridge into the faster route." },
+    { from: 55, to: 67, method: "Dragonstones", detail: "Dragonstones are about 30% faster than staying on diamonds." },
+    { from: 67, to: 99, method: "Onyx", detail: "Fastest listed method when cost is not the limiter. Dragonstones are the cheaper fast route." }
+  ] },
+  { name: "Farming", icon: "🌱", wiki: "https://impactmmo.wiki/Farming", focus: "Fastest route: compost to 30, then tree and fruit-tree runs.", routes: [
+    { from: 1, to: 30, method: "Rake and compost patches", detail: "Buy rake and compost at Farming Guild; rake/compost patches until 30." },
+    { from: 30, to: 33, method: "Willow trees", detail: "Run normal tree patches with willow saplings and apple basket protection." },
+    { from: 33, to: 42, method: "Willow + Banana", detail: "Add banana fruit trees to willow normal-tree runs." },
+    { from: 42, to: 45, method: "Willow + Curry", detail: "Swap fruit trees to curry." },
+    { from: 45, to: 57, method: "Maple + Curry", detail: "Move normal trees to maple; continue curry fruit trees." },
+    { from: 57, to: 60, method: "Maple + Papaya", detail: "Add papaya fruit trees." },
+    { from: 60, to: 68, method: "Yew + Papaya", detail: "Move normal trees to yew." },
+    { from: 68, to: 75, method: "Yew + Palm", detail: "Add palm fruit trees with papaya protection." },
+    { from: 75, to: 81, method: "Magic + Palm", detail: "Move normal trees to magic." },
+    { from: 81, to: 99, method: "Magic + Dragonfruit", detail: "Best listed 99 route: magic trees plus dragonfruit fruit trees." }
+  ] },
+  { name: "Firemaking", icon: "🔥", wiki: "https://impactmmo.wiki/Firemaking", focus: "Fastest route: buy logs and cycle safe fire lanes.", routes: [
+    { from: 1, to: 15, method: "Normal Logs", detail: "Buy logs from Shanomi or chop them yourself." },
+    { from: 15, to: 30, method: "Oak Logs", detail: "Burn oak logs." },
+    { from: 30, to: 45, method: "Willow Logs", detail: "Burn willow logs." },
+    { from: 45, to: 60, method: "Maple Logs", detail: "Burn maple logs." },
+    { from: 60, to: 75, method: "Yew Logs", detail: "Burn yew logs." },
+    { from: 75, to: 99, method: "Magic Logs", detail: "Burn magic logs. Wiki suggests cycling ::home, ::dh, and ::pure lanes." }
+  ] },
+  { name: "Fishing", icon: "🎣", wiki: "https://impactmmo.wiki/Fishing", focus: "Fastest route: net to 20, fly fish to 99.", routes: [
+    { from: 1, to: 20, method: "Small Net at Fishing Guild", detail: "Use the ::home tree to Fishing Guild and net fish until 20." },
+    { from: 20, to: 99, method: "Fly Fishing", detail: "Bring fly fishing rod and feathers. This is the wiki's fastest recommended method to 99." }
+  ] },
+  { name: "Fletching", icon: "🏹", wiki: "https://impactmmo.wiki/Fletching", focus: "Fastest practical route: bows, with Wilderness Resource Area x2 XP.", routes: [
+    { from: 1, to: 5, method: "Arrow shafts", detail: "Use regular logs." },
+    { from: 5, to: 10, method: "Shortbow (u)", detail: "Use regular logs." },
+    { from: 10, to: 20, method: "Longbow (u)", detail: "Use regular logs." },
+    { from: 20, to: 25, method: "Oak shortbow (u)", detail: "Use oak logs." },
+    { from: 25, to: 35, method: "Oak longbow (u)", detail: "Use oak logs." },
+    { from: 35, to: 40, method: "Willow shortbow (u)", detail: "Use willow logs." },
+    { from: 40, to: 50, method: "Willow longbow (u)", detail: "Use willow logs." },
+    { from: 50, to: 55, method: "Maple shortbow (u)", detail: "Use maple logs." },
+    { from: 55, to: 65, method: "Maple longbow (u)", detail: "Use maple logs." },
+    { from: 65, to: 70, method: "Yew shortbow (u)", detail: "Use yew logs." },
+    { from: 70, to: 85, method: "Yew longbow (u)", detail: "Use yew logs." },
+    { from: 85, to: 99, method: "Magic longbow (u)", detail: "Use magic logs. Darts are faster but not recommended by the wiki due to dart-tip supply." }
+  ] },
+  { name: "Herblore", icon: "⚗️", wiki: "https://impactmmo.wiki/Herblore", focus: "Fastest route: shop supplies into Zamorak brews.", routes: [
+    { from: 1, to: 50, method: "Attack Potions", detail: "Guam, vial of water, unfinished potion, and eye of newt." },
+    { from: 50, to: 72, method: "Fishing Potions", detail: "Avantoe, vial of water, unfinished potion, and snape grass." },
+    { from: 72, to: 78, method: "Ranging Potions", detail: "Dwarf weed, vial of water, unfinished potion, and wine of zamorak." },
+    { from: 78, to: 99, method: "Zamorak Brews", detail: "Torstol, vial of water, unfinished potion, and jangerberries from the farming shop." }
+  ] },
+  { name: "Hunter", icon: "🪤", wiki: "https://impactmmo.wiki/Hunter", focus: "Fastest route: birds, chinchompas, then black chinchompas.", routes: [
+    { from: 1, to: 53, method: "Bird snares at Hunter Island", detail: "Catch birds on Hunter Island; use more traps as they unlock." },
+    { from: 53, to: 73, method: "Grey/Red Chinchompas", detail: "Buy box traps and catch chinchompas on Hunter Island." },
+    { from: 73, to: 99, method: "Black Chinchompas", detail: "Teleport to ::chins in the Wilderness with a Glory to escape below 30 Wilderness." }
+  ] },
+  { name: "Mining", icon: "⛏️", wiki: "https://impactmmo.wiki/Mining", focus: "Fastest route: coal to 99 or click-intensive gold in Resource Area.", routes: [
+    { from: 1, to: 15, method: "Copper and Tin", detail: "Mine at Mining Guild after buying a pickaxe from Shanomi." },
+    { from: 15, to: 30, method: "Iron Ore", detail: "Stay at Mining Guild; donator teleport is faster if available." },
+    { from: 30, to: 40, method: "Coal Ore", detail: "Mine coal near the Mining Guild bank; buy a coal bag for longer trips." },
+    { from: 40, to: 92, method: "Gold Ore in Wilderness Resource Area", detail: "Fastest listed alternative if efficient: double ore, more clicks, Wilderness risk." },
+    { from: 92, to: 99, method: "Amethyst", detail: "More AFK-friendly method at the Mining Guild amethyst rocks." }
+  ] },
+  { name: "Prayer", icon: "🙏", wiki: "https://impactmmo.wiki/Prayer", focus: "Fastest practical route: superior dragon bones at Chaos Temple.", routes: [
+    { from: 1, to: 99, method: "Chaos Temple bones", detail: "Offer bones at Chaos Temple for a chance not to consume bones, effectively lowering cost. Vorkath is the recommended self-sufficient source of superior dragon bones." }
+  ] },
+  { name: "Runecrafting", icon: "🌀", wiki: "https://impactmmo.wiki/Runecrafting", focus: "Fastest route: tiaras/death talismans into blood and soul runes.", routes: [
+    { from: 1, to: 77, method: "Tiaras or Death Talismans", detail: "Buy supplies at ::shop and use the Abyss Death Altar route. Wiki calls this the only recommended quick route to 77." },
+    { from: 77, to: 90, method: "Blood Runes", detail: "Mine dense essence, venerate blocks, chisel fragments, and craft blood runes." },
+    { from: 90, to: 99, method: "Soul Runes", detail: "Continue dense essence, then switch to the Soul Altar." }
+  ] },
+  { name: "Slayer", icon: "💀", wiki: "https://impactmmo.wiki/Slayer", focus: "Fastest route: push task tiers, burst hard tasks, then elite boss tasks.", routes: [
+    { from: 1, to: 65, method: "Normal Duradel Tasks", detail: "Use ::slayer and save points early instead of extending tasks." },
+    { from: 65, to: 85, method: "Hard Tasks", detail: "Hard tasks are faster XP, often burstable/barrageable with Ancient spells." },
+    { from: 85, to: 99, method: "Elite Boss Tasks", detail: "Boss tasks are slower XP but stronger rewards and endgame value." }
+  ] },
+  { name: "Smithing", icon: "⚒️", wiki: "https://impactmmo.wiki/Smithing", focus: "Fastest route: Wilderness Resource Area x2 XP and rune route when funded.", routes: [
+    { from: 1, to: 24, method: "Bronze items", detail: "Mine copper/tin, smelt at Wilderness Resource Area hot vents, and smith the highest-bar bronze item you can." },
+    { from: 24, to: 50, method: "Iron warhammers", detail: "Mine iron, smelt, and smith iron warhammers for best XP/hour in this bracket." },
+    { from: 50, to: 55, method: "Mithril dagger", detail: "Use the efficient route in Wilderness Resource Area for x2 XP if you accept the risk." },
+    { from: 55, to: 59, method: "Mithril scimitar", detail: "Continue mithril scimitars." },
+    { from: 59, to: 68, method: "Mithril warhammer", detail: "Continue mithril warhammers." },
+    { from: 68, to: 79, method: "Mithril platebody", detail: "Use mithril platebodies until adamant warhammers unlock." },
+    { from: 79, to: 88, method: "Adamant warhammer", detail: "Move to adamant warhammers." },
+    { from: 88, to: 94, method: "Adamant platebody", detail: "Continue efficient route with adamant platebodies." },
+    { from: 94, to: 99, method: "Rune warhammer", detail: "Fastest listed expensive finish." }
+  ] },
+  { name: "Thieving", icon: "🪙", wiki: "https://impactmmo.wiki/Thieving", focus: "Fastest route: stalls, with guard spam as an alternative.", routes: [
+    { from: 1, to: 5, method: "Pickpocket Man", detail: "At ::home south. Hide NPC attack options to make clicking easier." },
+    { from: 5, to: 20, method: "First home stall", detail: "Steal from the first stall on the left." },
+    { from: 20, to: 35, method: "Third home stall", detail: "Steal from stall 3; use adjacent stalls if quick." },
+    { from: 35, to: 50, method: "Fur Stall", detail: "Teleport to Ardougne and steal from the Fur Stall south of teleport." },
+    { from: 50, to: 65, method: "Silver Stall", detail: "Steal from the Silver Stall north of Ardougne teleport." },
+    { from: 65, to: 75, method: "High-level home stall", detail: "Use the highlighted high-level home stall." },
+    { from: 75, to: 99, method: "End stall", detail: "Steal from the end stall and the adjacent stall if you are quick." }
+  ] },
+  { name: "Woodcutting", icon: "🪓", wiki: "https://impactmmo.wiki/Woodcutting", focus: "Fastest route: trees into magic trees; burn logs if training Firemaking too.", routes: [
+    { from: 1, to: 15, method: "Trees", detail: "Use ::home tree to Varrock Oaks and chop regular trees." },
+    { from: 15, to: 30, method: "Oaks", detail: "Stay near Varrock Oaks." },
+    { from: 30, to: 60, method: "Willows", detail: "Use ::home tree to Draynor Willows." },
+    { from: 60, to: 75, method: "Yews", detail: "Use ::di yews or yews south of Seers bank." },
+    { from: 75, to: 99, method: "Magic Trees", detail: "Use ::di or the home tree teleport to magic trees." }
+  ] }
 ];
 
 const STRATEGY_LIBRARY = {
@@ -1250,6 +1350,8 @@ function loadState(){
     slayer_favorites:[],
     slayer_notes:{},
     skilling_levels:{},
+    saved_usernames:[],
+    skilling_mode:'fastest',
     slayer_logs:[],
     fp_logs:[],
     transfers:[],
@@ -4471,6 +4573,10 @@ function normalizeState(){
     const level = Math.round(Number(state.skilling_levels[skill.name]) || 1);
     state.skilling_levels[skill.name] = Math.max(1, Math.min(99, level));
   });
+  state.saved_usernames = Array.isArray(state.saved_usernames) ? state.saved_usernames : [];
+  state.saved_usernames = [...new Set(state.saved_usernames.map(name => String(name || '').trim()).filter(Boolean))].slice(0, 12);
+  if (state.username && !state.saved_usernames.includes(state.username)) state.saved_usernames.unshift(state.username);
+  state.skilling_mode = ['fastest', 'money', 'middle'].includes(state.skilling_mode) ? state.skilling_mode : 'fastest';
   state.slayer_logs = Array.isArray(state.slayer_logs) ? state.slayer_logs : [];
   state.fp_logs = Array.isArray(state.fp_logs) ? state.fp_logs : [];
   state.transfers = Array.isArray(state.transfers) ? state.transfers : [];
@@ -4650,18 +4756,38 @@ function recalcItemStats(){
 // HISCORES INTEGRATION
 function openHiscoresModal() {
   document.getElementById('hiscores-modal').classList.remove('hidden');
-  document.getElementById('username-input').value = state.username || '';
-  document.getElementById('hiscores-status').innerHTML = '';
+  const modalInput = document.getElementById('username-input-modal');
+  if(modalInput) modalInput.value = state.username || '';
+  const modalStatus = document.getElementById('hiscores-status-modal');
+  if(modalStatus) modalStatus.innerHTML = '';
 }
 
 function closeHiscoresModal() {
   document.getElementById('hiscores-modal').classList.add('hidden');
 }
 
-async function fetchHiscores() {
+function renderDashboardUsernames() {
+  const input = document.getElementById('dashboard-username-input');
+  if(input && !input.value) input.value = state.username || '';
+  const list = document.getElementById('dashboard-saved-usernames');
+  if(!list) return;
+  const names = state.saved_usernames || [];
+  list.innerHTML = names.length
+    ? names.map(name => {
+      const arg = JSON.stringify(name);
+      return `
+      <button class="saved-username-pill ${name === state.username ? 'active' : ''}" type="button" onclick='selectSavedUsername(${arg})'>${escapeHtml(name)}</button>
+      <button class="saved-username-remove" type="button" onclick='removeSavedUsername(${arg})' title="Remove ${escapeHtml(name)}">×</button>
+    `}).join('')
+    : '<div class="empty compact">No saved usernames yet.</div>';
+}
+
+async function fetchHiscores(options = {}) {
   if (!ensureRegisteredUser('set a username and import stats')) return;
-  const username = document.getElementById('username-input').value.trim();
-  const statusEl = document.getElementById('hiscores-status');
+  const sourceId = options.sourceId || 'username-input';
+  const statusId = options.statusId || 'hiscores-status';
+  const username = document.getElementById(sourceId)?.value.trim() || '';
+  const statusEl = document.getElementById(statusId);
   if (!username) {
     if (statusEl) statusEl.innerHTML = '<div class="badge red">Enter a username first.</div>';
     return;
@@ -4686,18 +4812,42 @@ async function fetchHiscores() {
 
     state.player_data = { skills: data.skills };
     state.username = username;
+    state.saved_usernames = [username, ...(state.saved_usernames || []).filter(name => name.toLowerCase() !== username.toLowerCase())].slice(0, 12);
     saveState();
 
-    statusEl.innerHTML = '<div class="badge green">Username saved and stats imported successfully.</div>';
-    switchTab('goals');
+    if(statusEl) statusEl.innerHTML = '<div class="badge green">Username saved and stats imported successfully.</div>';
+    switchTab(options.afterTab || 'goals');
     renderSuggestedGoals();
+    renderDashboardUsernames();
+    renderSkilling();
   } catch (err) {
     const fallbackMessage = isLocalPreview
       ? `Stats lookup is not available in local preview mode right now. If you want local testing, run the local helper on ${HISCORES_PROXY_BASE}.`
       : 'Live stat lookup is not configured on this deployment yet. Connect your hiscores source to the website backend and this will work directly in-browser for users.';
     const message = err?.message || 'Could not fetch account stats.';
-    statusEl.innerHTML = `<div class="badge red">${escapeHtml(message)}</div><div class="profit-preview" style="margin-top:10px;">${escapeHtml(fallbackMessage)}</div>`;
+    if(statusEl) statusEl.innerHTML = `<div class="badge red">${escapeHtml(message)}</div><div class="profit-preview" style="margin-top:10px;">${escapeHtml(fallbackMessage)}</div>`;
   }
+}
+
+function selectSavedUsername(username) {
+  const clean = String(username || '').trim();
+  if(!clean) return;
+  ['dashboard-username-input', 'username-input', 'username-input-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = clean;
+  });
+}
+
+function removeSavedUsername(username) {
+  const clean = String(username || '').trim().toLowerCase();
+  state.saved_usernames = (state.saved_usernames || []).filter(name => name.toLowerCase() !== clean);
+  if(String(state.username || '').toLowerCase() === clean) {
+    state.username = null;
+    state.player_data = null;
+  }
+  saveState();
+  renderDashboardUsernames();
+  renderSkilling();
 }
 
 function parseGoalSkill(skillVal) {
@@ -7035,6 +7185,7 @@ function renderDashboard(){
   const planEl = document.getElementById('dashboard-plan-list');
   const momentumEl = document.getElementById('dashboard-momentum-list');
   const dashboardPlanPill = document.getElementById('dashboard-plan-pill');
+  renderDashboardUsernames();
 
   const fpItemValue = state.fp_items.reduce((sum, item) => sum + (Number(item.buy_value) || 0), 0);
   const activeGoals = state.goals.filter(goal => !goal.completed);
@@ -7641,7 +7792,20 @@ function renderSession(){
 }
 
 function getSkillingLevel(skillName){
-  return Math.max(1, Math.min(99, Math.round(Number(state.skilling_levels?.[skillName]) || 1)));
+  return getSkillingLevelInfo(skillName).level;
+}
+
+function getSkillingLevelInfo(skillName){
+  const data = getGoalProgressionData();
+  const key = String(skillName || '').toLowerCase();
+  const imported = parseGoalSkill(data?.skills?.[key] || data?.[key]).level;
+  if(imported > 0) {
+    return { level: Math.max(1, Math.min(99, imported)), source: 'Imported Stats' };
+  }
+  return {
+    level: Math.max(1, Math.min(99, Math.round(Number(state.skilling_levels?.[skillName]) || 1))),
+    source: 'Manual'
+  };
 }
 
 function getNextSkillingMilestone(level){
@@ -7669,14 +7833,65 @@ function resetSkillingLevels(){
   renderSkilling();
 }
 
+function getSkillModeSummary(skill, level, mode) {
+  const name = skill.name;
+  if(mode === 'fastest') return skill.focus;
+  const money = {
+    Fishing: 'Money route: use the AFK fish progression if you value supplies over raw XP, especially monkfish/anglerfish after 62.',
+    Mining: 'Money route: Wilderness Resource Area gold ore gives double ore and can beat coal if you are efficient, but it is clickier and risky.',
+    Hunter: 'Money route: chinchompas into black chinchompas are the value path once unlocked.',
+    Prayer: 'Money route: farm Vorkath for superior dragon bones instead of buying all bones.',
+    Runecrafting: 'Money route: Sunfire runes from 33 are profitable but less XP-efficient than the fastest route.',
+    Slayer: 'Money route: elite boss tasks from 85+ are slower XP but much stronger rewards.',
+    Woodcutting: 'Money route: keep yew/magic logs instead of burning them, or pair with Firemaking if XP matters more.',
+    Fletching: 'Money route: use Wilderness Resource Area x2 XP to reduce supplies, but only bring what you can lose.',
+    Smithing: 'Money route: cheaper mithril/adamant routes save GP; Wilderness x2 XP cuts bar requirements if you accept risk.',
+    Cooking: 'Money route: cook useful food you will actually use or sell; monkfish is the main efficient middle ground.',
+    Thieving: 'Money route: high-level stalls from 75+ are the clean GP path while still pushing XP.',
+    Farming: 'Money route: tree runs are not instant cash, but they build 99 passively while you do profitable content between runs.',
+    Herblore: 'Money route: make useful PvM potions you will consume or sell instead of only chasing raw XP.',
+    Crafting: 'Money route: diamonds/dragonstones are cheaper than onyx while still moving quickly.',
+    Firemaking: 'Money route: skip burning expensive logs if GP matters; train it when logs are cheap or self-chopped.',
+    Agility: 'Money route: no strong GP route listed; use this as a utility/maxing skill and pick safer courses if risk matters.'
+  };
+  const middle = {
+    Agility: 'Middle route: Gnome to 60, then Werewolf Course for safer 52-99 progress if Wilderness risk is not worth it.',
+    Fishing: 'Middle route: fly fish to 62, monkfish to 82, then anglerfish to 99 for a more AFK path.',
+    Mining: 'Middle route: coal is steadier than Wilderness gold; switch to amethyst at 92 for AFK progress.',
+    Smithing: 'Middle route: adamant route balances cost and speed better than full mithril or full rune.',
+    Crafting: 'Middle route: dragonstones from 55-99 are the balanced fast route without jumping straight to onyx.',
+    Fletching: 'Middle route: bow fletching is the practical wiki route; darts are faster but supply-heavy and not recommended.',
+    Herblore: 'Middle route: follow attack, fishing, ranging, then Zamorak brews; use extended antifires from 84 if you want AFK.',
+    Hunter: 'Middle route: stay on normal chinchompas longer if Wilderness black chins are not worth the risk.',
+    Prayer: 'Middle route: buy some bones, farm some Vorkath, and use Chaos Temple to stretch both.',
+    Runecrafting: 'Middle route: rush 77 with talismans if funded, then dense essence; Sunfire runes are the profit detour.',
+    Slayer: 'Middle route: save points, block slow dragons, burst hard tasks, then mix elite bosses for rewards.',
+    Thieving: 'Middle route: use stalls for consistency; guard spam from 40-75 is an optional faster-click method.',
+    Woodcutting: 'Middle route: chop normal tree tiers and bank yew/magic logs if you want value.',
+    Firemaking: 'Middle route: burn self-chopped logs while Woodcutting so Firemaking does not feel like pure GP loss.',
+    Cooking: 'Middle route: monkfish from 80 onward is the sweet spot; sharks are slower but useful food.',
+    Farming: 'Middle route: do tree and fruit-tree runs when timers are up, then return to active money makers.'
+  };
+  return (mode === 'money' ? money[name] : middle[name]) || skill.focus;
+}
+
+function getRelevantSkillRoutes(skill, level, mode) {
+  const routes = (skill.routes || []).filter(route => route.to > level);
+  return routes.slice(0, mode === 'fastest' ? 4 : 3);
+}
+
 function renderSkilling(){
   state.skilling_levels = state.skilling_levels || {};
   const search = String(document.getElementById('skilling-search')?.value || '').trim().toLowerCase();
+  const modeSelect = document.getElementById('skilling-mode');
+  if(modeSelect && state.skilling_mode && modeSelect.value !== state.skilling_mode) modeSelect.value = state.skilling_mode;
+  const mode = modeSelect?.value || state.skilling_mode || 'fastest';
+  state.skilling_mode = mode;
   const sort = document.getElementById('skilling-sort')?.value || 'wiki';
   const skills = IMPACT_SKILLING_GUIDES.map((skill, index) => ({
     ...skill,
     index,
-    level: getSkillingLevel(skill.name)
+    ...getSkillingLevelInfo(skill.name)
   }));
 
   const totalLevel = skills.reduce((sum, skill) => sum + skill.level, 0);
@@ -7708,29 +7923,56 @@ function renderSkilling(){
     const progress = Math.round(((skill.level - 1) / 98) * 100);
     const nextMilestone = getNextSkillingMilestone(skill.level);
     const status = skill.level >= 99 ? 'Maxed' : `Next ${nextMilestone}`;
+    const routes = getRelevantSkillRoutes(skill, skill.level, mode);
+    const activeRoute = routes[0];
+    const modeSummary = getSkillModeSummary(skill, skill.level, mode);
+    const nextTitle = mode === 'fastest'
+      ? (activeRoute?.method || 'Open the wiki guide')
+      : (mode === 'money' ? 'Money making route' : 'Middle route');
+    const nextCopy = mode === 'fastest'
+      ? (activeRoute?.detail || skill.focus)
+      : modeSummary;
     const safeName = escapeHtml(skill.name);
     const safeFocus = escapeHtml(skill.focus);
+    const safeModeSummary = escapeHtml(modeSummary);
+    const safeSource = escapeHtml(skill.source);
     return `
       <div class="skilling-card ${skill.level >= 99 ? 'maxed' : ''}">
         <div class="skilling-card-top">
-          <div>
+          <div class="skilling-title-wrap">
+            <div class="skilling-logo" aria-hidden="true">${skill.icon || '⭐'}</div>
+            <div>
             <div class="skilling-kicker">Impact Wiki 1-99</div>
             <div class="skilling-title">${safeName}</div>
+            </div>
           </div>
           <div class="skilling-level-badge">${skill.level}</div>
         </div>
-        <div class="skilling-focus">${safeFocus}</div>
+        <div class="skilling-focus">${safeModeSummary}</div>
         <div class="skilling-progress-row">
-          <span>Level ${skill.level}</span>
+          <span>${safeSource}</span>
           <span>${status}</span>
         </div>
         <div class="progress-bar skilling-progress"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <div class="skilling-next-step">
+          <div class="skilling-next-label">${skill.level >= 99 ? 'Maxed' : `${mode === 'money' ? 'Money route' : mode === 'middle' ? 'Middle route' : 'Fastest next step'}`}</div>
+          <div class="skilling-next-title">${skill.level >= 99 ? 'You are already 99.' : escapeHtml(nextTitle)}</div>
+          <div class="skilling-next-copy">${skill.level >= 99 ? 'No more levels needed for max.' : escapeHtml(nextCopy)}</div>
+        </div>
+        <div class="skilling-route-list">
+          ${routes.map(route => `
+            <div class="skilling-route-step">
+              <span>${route.from}-${route.to}</span>
+              <strong>${escapeHtml(route.method)}</strong>
+            </div>
+          `).join('')}
+        </div>
         <div class="skilling-card-actions">
           <label class="skilling-level-input">
-            Current level
-            <input type="number" min="1" max="99" value="${skill.level}" onchange="updateSkillingLevel('${safeName}', this.value)">
+            ${skill.source === 'Imported Stats' ? 'Stats level' : 'Manual level'}
+            <input type="number" min="1" max="99" value="${skill.level}" ${skill.source === 'Imported Stats' ? 'disabled' : ''} onchange="updateSkillingLevel('${safeName}', this.value)">
           </label>
-          <button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>
+          ${skill.source === 'Imported Stats' ? '' : `<button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>`}
           <a class="btn-sm skilling-wiki-btn" href="${skill.wiki}" target="_blank" rel="noopener">Wiki Guide</a>
         </div>
       </div>
