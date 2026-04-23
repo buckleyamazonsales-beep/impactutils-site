@@ -189,6 +189,9 @@ if ($action === '') {
         if ($listing['username'] === '' || $listing['price'] <= 0 || $listing['contact'] === '') {
             throw new RuntimeException('Listing requires username, price, and contact.');
         }
+        if ($ticket['listing_id'] === '' || $ticket['username'] === '' || $ticket['amount'] <= 0 || $ticket['created_by'] === '') {
+            throw new RuntimeException('Listing ticket requires listing ID, username, amount, and creator.');
+        }
         foreach (($state['marketplace_listings'] ?? []) as $existing) {
             $existingName = strtolower(trim((string)($existing['username'] ?? '')));
             $existingStatus = strtolower(trim((string)($existing['status'] ?? '')));
