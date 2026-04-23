@@ -22,7 +22,7 @@ if (!is_array($payload)) {
 
 $subId = trim((string)($payload['stripeSubscriptionId'] ?? ''));
 if ($subId === '') {
-    lemon_json_exit(400, ['error' => 'stripeSubscriptionId is required for Pro status sync.' });
+    lemon_json_exit(400, ['error' => 'stripeSubscriptionId is required for Pro status sync.']);
 }
 
 $q = 'expand[]=items';

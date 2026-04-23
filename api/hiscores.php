@@ -107,6 +107,77 @@ function parse_impact_hiscores_html(string $html): array {
   return $skills;
 }
 
+function impact_hiscores_plain_text(string $html): string {
+  $text = preg_replace('/<script\b[^>]*>.*?<\/script>/is', ' ', $html);
+  $text = preg_replace('/<style\b[^>]*>.*?<\/style>/is', ' ', $text);
+  $text = preg_replace('/<[^>]+>/', ' ', $text);
+  $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+  return trim((string)preg_replace('/\s+/', ' ', $text));
+}
+
+function parse_impact_hiscores_text(string $html): array {
+  $text = impact_hiscores_plain_text($html);
+  $start = stripos($text, 'Skills Skill Rank Level XP');
+  if ($start !== false) {
+    $text = substr($text, $start);
+  }
+
+  $end = stripos($text, ' Other Type Rank');
+  if ($end !== false) {
+    $text = substr($text, 0, $end);
+  }
+
+  $skillNames = [
+    'Overall',
+    'Attack',
+    'Defence',
+    'Strength',
+    'Hitpoints',
+    'Ranged',
+    'Prayer',
+    'Magic',
+    'Cooking',
+    'Woodcutting',
+    'Fletching',
+    'Fishing',
+    'Firemaking',
+    'Crafting',
+    'Smithing',
+    'Mining',
+    'Herblore',
+    'Agility',
+    'Thieving',
+    'Slayer',
+    'Farming',
+    'Runecrafting',
+    'Hunter',
+    'Construction',
+  ];
+
+  $skills = [];
+  foreach ($skillNames as $skillName) {
+    $pattern = '/\b' . preg_quote($skillName, '/') . '\s+(-|#?\d[\d,]*)\s+(\d{1,4})\s+(\d[\d,]*)\b/i';
+    if (!preg_match($pattern, $text, $match)) {
+      continue;
+    }
+
+    $key = normalize_skill_key($skillName);
+    $level = (int)preg_replace('/[^0-9]/', '', $match[2]);
+    $xp = (int)preg_replace('/[^0-9]/', '', $match[3]);
+    if ($key === '' || ($level <= 0 && $xp <= 0)) {
+      continue;
+    }
+
+    $skills[$key] = [
+      'rank' => $match[1] === '' ? '-' : $match[1],
+      'level' => $level,
+      'xp' => $xp,
+    ];
+  }
+
+  return $skills;
+}
+
 $upstreamBase = getenv('IMPACT_HISCORES_UPSTREAM_BASE') ?: 'https://impact.gg/hiscores/player';
 $url = rtrim($upstreamBase, '/') . '/' . rawurlencode($username);
 $context = stream_context_create([
@@ -142,6 +213,15 @@ if (stripos($contentType, 'application/json') !== false) {
 if (!is_array($data)) {
   $skills = parse_impact_hiscores_html($response);
   if (!$skills) {
+    $skills = parse_impact_hiscores_text($response);
+  }
+  if (!$skills) {
+    if (stripos(impact_hiscores_plain_text($response), 'Account does not exist') !== false) {
+      http_response_code(404);
+      echo json_encode(['error' => 'That Impact account does not exist. Check the username and try again.']);
+      exit;
+    }
+
     http_response_code(502);
     echo json_encode(['error' => 'Could not parse skills from the hiscores page.']);
     exit;
