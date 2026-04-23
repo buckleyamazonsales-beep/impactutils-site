@@ -729,6 +729,7 @@ const MARKETPLACE_LISTING_FEE = 500_000_000;
 const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
+const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
 const SITE_VERSION = '2026.04.22.4';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
@@ -804,8 +805,12 @@ function applyCommunityStatePayload(data = {}) {
   if (Array.isArray(data.tickets)) {
     state.tickets = data.tickets;
   }
+  if (data.user_sessions && typeof data.user_sessions === 'object') {
+    state.user_sessions = data.user_sessions;
+  }
   normalizeState();
   saveState();
+  updateOnlineIndicator();
 }
 
 async function syncCommunityStateFromServer() {
@@ -1658,17 +1663,43 @@ async function hydrateAuthUsersCache() {
   return authUsersCache;
 }
 
-function trackUserActivity() {
-  const currentUser = getCurrentUser();
-  if (!currentUser?.email) return;
-  
+function getVisitorSessionId() {
+  if (typeof window === 'undefined') return generateId();
+  try {
+    let id = localStorage.getItem(VISITOR_SESSION_KEY);
+    if (!id) {
+      id = `guest-${generateId()}-${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem(VISITOR_SESSION_KEY, id);
+    }
+    return String(id).toLowerCase().replace(/[^a-z0-9._:-]/g, '').slice(0, 80);
+  } catch (e) {
+    return `guest-${generateId()}`.toLowerCase().replace(/[^a-z0-9._:-]/g, '').slice(0, 80);
+  }
+}
+
+function getPresenceSessionKey() {
+  const user = getCurrentUser();
+  const email = String(user?.email || '').trim().toLowerCase();
+  return email || `guest:${getVisitorSessionId()}`;
+}
+
+async function trackUserActivity() {
+  if (!state) return;
   if (!state.user_sessions) state.user_sessions = {};
   
   const now = Date.now();
-  const lastTrack = state.user_sessions[currentUser.email] || 0;
+  const sessionKey = getPresenceSessionKey();
+  const lastTrack = Number(state.user_sessions[sessionKey]) || 0;
   if (now - lastTrack > 60000) {
-    state.user_sessions[currentUser.email] = now;
+    state.user_sessions[sessionKey] = now;
     saveState();
+    if (getCommunityApiBase()) {
+      try {
+        await postCommunityAction('heartbeat', { session_key: sessionKey, timestamp: now });
+      } catch (e) {
+        console.warn('trackUserActivity heartbeat', e);
+      }
+    }
   }
   updateOnlineIndicator();
 }
@@ -1687,7 +1718,7 @@ function getOnlineUsers() {
   const now = Date.now();
   return Object.entries(state.user_sessions)
     .filter(([_, ts]) => now - ts < ONLINE_TIMEOUT_MS)
-    .map(([email, ts]) => ({ email, lastActive: ts }));
+    .map(([email, ts]) => ({ email, lastActive: ts, isGuest: String(email).startsWith('guest:') }));
 }
 
 function renderAllMembers() {
@@ -1768,7 +1799,9 @@ function renderAllMembers() {
   if (state?.user_sessions) {
     Object.entries(state.user_sessions).forEach(([email, ts]) => {
       const key = String(email || '').toLowerCase();
-      const existing = membersMap.get(key) || { email: key, display: key.split('@')[0], authId: '', plan: 'free', verified: false, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0, registeredAt: '' };
+      const isGuestSession = key.startsWith('guest:');
+      const guestLabel = isGuestSession ? `Guest ${key.slice(-6).toUpperCase()}` : key.split('@')[0];
+      const existing = membersMap.get(key) || { email: key, display: guestLabel, authId: isGuestSession ? key.replace(/^guest:/, '') : '', plan: 'free', verified: false, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: 0, registeredAt: '', isGuest: isGuestSession };
       existing.lastSeen = Math.max(existing.lastSeen, ts);
       membersMap.set(key, existing);
     });
@@ -1803,7 +1836,7 @@ function renderAllMembers() {
           </td>
           <td>
             <div style="font-size:11px;">
-              <span style="color:${m.verified ? 'var(--green)' : 'var(--amber)'};">${m.verified ? 'Verified' : 'Pending verify'}</span><br>
+              <span style="color:${m.isGuest ? 'var(--muted)' : m.verified ? 'var(--green)' : 'var(--amber)'};">${m.isGuest ? 'Guest visitor' : m.verified ? 'Verified' : 'Pending verify'}</span><br>
               <span style="color:var(--muted);text-transform:capitalize;">${escapeHtml(m.plan || 'free')}</span>
               ${m.registeredAt ? `<br><span style="color:var(--hint);">Joined ${escapeHtml(String(m.registeredAt).slice(0, 10))}</span>` : ''}
             </div>
@@ -1839,7 +1872,15 @@ function timeAgo(timestamp) {
   return `${days}d ago`;
 }
 
-setInterval(updateOnlineIndicator, 60000);
+setInterval(() => {
+  void trackUserActivity();
+  updateOnlineIndicator();
+}, 60000);
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) void trackUserActivity();
+  });
+}
 
 function loadAuthUsers() {
   if (Array.isArray(authUsersCache)) {
@@ -3033,7 +3074,10 @@ function renderAdminAllMembers() {
   if (state?.user_sessions) {
     Object.entries(state.user_sessions).forEach(([email, ts]) => {
       if (!membersMap.has(email)) {
-        membersMap.set(email, { email, display: email.split('@')[0], flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: ts });
+        const key = String(email || '').toLowerCase();
+        const isGuestSession = key.startsWith('guest:');
+        const display = isGuestSession ? `Guest ${key.slice(-6).toUpperCase()}` : key.split('@')[0];
+        membersMap.set(email, { email, display, flips: 0, slayer: 0, fp: 0, prices: 0, listings: 0, lastSeen: ts, isGuest: isGuestSession });
       }
     });
   }
@@ -3062,7 +3106,7 @@ function renderAdminAllMembers() {
         return `<tr>
           <td>
             <div style="font-weight:600;">${escapeHtml(m.display)}</div>
-            <div style="font-size:11px;color:var(--muted);">${escapeHtml(m.email)}</div>
+            <div style="font-size:11px;color:var(--muted);">${m.isGuest ? 'Guest visitor' : escapeHtml(m.email)}</div>
           </td>
           <td>
             <div style="font-size:11px;">
@@ -3078,7 +3122,7 @@ function renderAdminAllMembers() {
             ${isOnline ? '<span style="color:var(--green);font-size:11px;">● Online</span>' : '<span style="color:var(--muted);font-size:11px;">○ Offline</span>'}
           </td>
           <td>
-            <button class="btn-sm" onclick="document.getElementById('admin-profile-search').value='${escapeHtml(m.email)}';adminLookupProfile()">View</button>
+            ${m.isGuest ? '<span style="color:var(--muted);font-size:11px;">No profile</span>' : `<button class="btn-sm" onclick="document.getElementById('admin-profile-search').value='${escapeHtml(m.email)}';adminLookupProfile()">View</button>`}
           </td>
         </tr>`;
       }).join('')}
@@ -4895,6 +4939,18 @@ function normalizeState(){
       by_display: String(b.by_display || '').trim().slice(0, 80)
     }))
     .filter(b => b.email);
+  state.user_sessions = state.user_sessions && typeof state.user_sessions === 'object' && !Array.isArray(state.user_sessions)
+    ? state.user_sessions
+    : {};
+  const sessionCutoff = Date.now() - ONLINE_TIMEOUT_MS;
+  Object.entries(state.user_sessions).forEach(([key, timestamp]) => {
+    const safeKey = String(key || '').trim().toLowerCase();
+    const ts = Number(timestamp) || 0;
+    delete state.user_sessions[key];
+    if (safeKey && ts >= sessionCutoff) {
+      state.user_sessions[safeKey] = ts;
+    }
+  });
 
   state.trades.forEach(t => {
     if (!t.id) t.id = generateId();

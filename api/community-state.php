@@ -109,9 +109,23 @@ function impact_community_normalize_state($state) {
         return ((int)($b['created_at'] ?? 0)) <=> ((int)($a['created_at'] ?? 0));
     });
 
+    $sessions = [];
+    $cutoff = (int)round(microtime(true) * 1000) - (20 * 60 * 1000);
+    foreach (($state['user_sessions'] ?? []) as $key => $timestamp) {
+        $sessionKey = strtolower(trim((string)$key));
+        if ($sessionKey === '') {
+            continue;
+        }
+        $ts = (int)$timestamp;
+        if ($ts >= $cutoff) {
+            $sessions[$sessionKey] = $ts;
+        }
+    }
+
     return [
         'marketplace_listings' => array_values($listings),
         'tickets' => array_values($tickets),
+        'user_sessions' => $sessions,
     ];
 }
 
@@ -272,6 +286,22 @@ if ($action === '') {
             return;
         }
         throw new RuntimeException('Ticket not found.');
+    }
+
+    if ($action === 'heartbeat') {
+        $sessionKey = strtolower(trim((string)($payload['session_key'] ?? '')));
+        $timestamp = (int)($payload['timestamp'] ?? round(microtime(true) * 1000));
+        if ($sessionKey === '') {
+            throw new RuntimeException('Session key is required.');
+        }
+        if (!preg_match('/^[a-z0-9@._:-]{3,120}$/', $sessionKey)) {
+            throw new RuntimeException('Invalid session key.');
+        }
+        if (empty($state['user_sessions']) || !is_array($state['user_sessions'])) {
+            $state['user_sessions'] = [];
+        }
+        $state['user_sessions'][$sessionKey] = $timestamp > 0 ? $timestamp : (int)round(microtime(true) * 1000);
+        return;
     }
 
     throw new RuntimeException('Unsupported action.');
