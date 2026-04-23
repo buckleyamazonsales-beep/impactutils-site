@@ -2523,6 +2523,18 @@ const DUNGEON_MONSTER_LINKS = {
   'Asgarnian Ice Dungeon': ['Ice warriors', 'Ice giants', 'Skeletal wyverns']
 };
 
+const DUNGEON_MAP_IMAGES = {
+  'Asgarnian Ice Dungeon': 'https://oldschool.runescape.wiki/images/Asgarnian_Ice_Dungeon_map.png',
+  'Brimhaven Dungeon': 'https://oldschool.runescape.wiki/images/Brimhaven_dungeon_map.png',
+  'Catacombs': 'https://oldschool.runescape.wiki/images/Catacombs_of_Kourend_map.png',
+  'Godwars': 'https://oldschool.runescape.wiki/images/God_Wars_Dungeon_Map.png',
+  'Iorwerth Dungeon': 'https://oldschool.runescape.wiki/images/Iorwerth_Dungeon_map.png',
+  "Jormungand's Prison": 'https://oldschool.runescape.wiki/images/Jormungand%27s_Prison_map.png',
+  'Taverley Dungeon': 'https://oldschool.runescape.wiki/images/Taverley_Dungeon_map.png',
+  "Zemouregal's Base": 'https://oldschool.runescape.wiki/images/Zemouregal%27s_Base.png',
+  'Slayer Cave': 'https://oldschool.runescape.wiki/images/Wilderness_Slayer_Cave_map.png'
+};
+
 function normalizeMapName(name) {
   return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
@@ -2545,6 +2557,9 @@ function getDungeonLinksForMonster(monsterName) {
 
 function getDungeonMapImage(row, monsters = []) {
   if (!row || row.category !== 'Dungeons') return '';
+  const target = normalizeMapName(row.name);
+  const wikiKey = Object.keys(DUNGEON_MAP_IMAGES).find(name => normalizeMapName(name) === target);
+  if (wikiKey) return DUNGEON_MAP_IMAGES[wikiKey];
   const labels = monsters.length ? monsters.slice(0, 6) : [row.name, 'Entry', 'Route', 'Boss room'];
   const rooms = [
     { x: 88, y: 182, w: 122, h: 86 },
@@ -2654,9 +2669,10 @@ function renderMaps() {
   const dungeonMonsters = selected ? getDungeonMonsterLinks(selected.name) : [];
   const monsterDungeons = selected?.category !== 'Dungeons' ? getDungeonLinksForMonster(selected.name) : [];
   const dungeonMapSrc = selected ? getDungeonMapImage(selected, dungeonMonsters) : '';
+  const dungeonMapFromWiki = selected ? Object.keys(DUNGEON_MAP_IMAGES).some(name => normalizeMapName(name) === normalizeMapName(selected.name)) : false;
   const dungeonMapMarkup = dungeonMapSrc ? `
     <div class="map-image-panel">
-      <div class="maps-mini-heading">Dungeon Map</div>
+      <div class="maps-mini-heading">${dungeonMapFromWiki ? 'OSRS Wiki Dungeon Map' : 'Dungeon Map'}</div>
       <img class="dungeon-map-image" src="${dungeonMapSrc}" alt="${escapeHtml(selected.name)} dungeon map">
     </div>
   ` : '';
