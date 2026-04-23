@@ -16,9 +16,12 @@ function impact_admin_registry_public_row($row) {
         'last_signin_at' => $row['last_signin_at'] ?? null,
         'client_created_at' => $row['client_created_at'] ?? null,
         'is_moderator' => !empty($row['is_moderator']),
+        'is_empire' => !empty($row['is_empire']),
         'is_admin' => !empty($row['is_admin']),
         'moderator_updated_at' => $row['moderator_updated_at'] ?? null,
         'moderator_updated_by' => $row['moderator_updated_by'] ?? null,
+        'empire_updated_at' => $row['empire_updated_at'] ?? null,
+        'empire_updated_by' => $row['empire_updated_by'] ?? null,
     ];
 }
 
@@ -68,7 +71,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         lemon_json_exit(400, ['error' => 'Invalid JSON body.']);
     }
     $action = strtolower(trim((string)($payload['action'] ?? '')));
-    if ($action !== 'set_moderator') {
+    if (!in_array($action, ['set_moderator', 'set_empire'], true)) {
         lemon_json_exit(400, ['error' => 'Unsupported admin action.']);
     }
 
@@ -88,6 +91,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 
     $wantModerator = !empty($payload['is_moderator']);
+    $wantEmpire = !empty($payload['is_empire']);
     $updatedBy = trim(strip_tags((string)($payload['updated_by'] ?? 'admin')));
     if (function_exists('mb_substr')) {
         $updatedBy = mb_substr($updatedBy, 0, 160);
@@ -96,7 +100,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
     $now = gmdate('c');
 
-    $ok = impact_registry_merge(function (&$users) use ($email, $displayName, $wantModerator, $updatedBy, $now) {
+    $ok = impact_registry_merge(function (&$users) use ($email, $displayName, $action, $wantModerator, $wantEmpire, $updatedBy, $now) {
         $idx = -1;
         foreach ($users as $i => $row) {
             if (!is_array($row)) {
@@ -115,26 +119,40 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 'signup_at' => $now,
                 'email_verified_at' => null,
                 'last_signin_at' => null,
-                'is_moderator' => $wantModerator,
+                'is_moderator' => $action === 'set_moderator' ? $wantModerator : false,
+                'is_empire' => $action === 'set_empire' ? $wantEmpire : false,
                 'is_admin' => false,
-                'moderator_updated_at' => $now,
-                'moderator_updated_by' => $updatedBy,
             ];
+            if ($action === 'set_moderator') {
+                $users[count($users) - 1]['moderator_updated_at'] = $now;
+                $users[count($users) - 1]['moderator_updated_by'] = $updatedBy;
+            }
+            if ($action === 'set_empire') {
+                $users[count($users) - 1]['empire_updated_at'] = $now;
+                $users[count($users) - 1]['empire_updated_by'] = $updatedBy;
+            }
             return;
         }
 
         $row = is_array($users[$idx]) ? $users[$idx] : ['email' => $email];
         $row['email'] = $email;
-        if (!empty($row['is_admin'])) {
-            $row['is_moderator'] = false;
-        } else {
-            $row['is_moderator'] = $wantModerator;
+        if ($action === 'set_moderator') {
+            if (!empty($row['is_admin'])) {
+                $row['is_moderator'] = false;
+            } else {
+                $row['is_moderator'] = $wantModerator;
+            }
+            $row['moderator_updated_at'] = $now;
+            $row['moderator_updated_by'] = $updatedBy;
+        }
+        if ($action === 'set_empire') {
+            $row['is_empire'] = !empty($row['is_admin']) ? false : $wantEmpire;
+            $row['empire_updated_at'] = $now;
+            $row['empire_updated_by'] = $updatedBy;
         }
         if (empty($row['display_name'])) {
             $row['display_name'] = $displayName;
         }
-        $row['moderator_updated_at'] = $now;
-        $row['moderator_updated_by'] = $updatedBy;
         $users[$idx] = $row;
     });
 

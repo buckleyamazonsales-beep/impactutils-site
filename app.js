@@ -967,9 +967,11 @@ function applyServerRegistryRole(serverUser) {
   if (!email || email !== String(currentUser.email || '').trim().toLowerCase()) return false;
   const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
   const serverIsMod = Boolean(serverUser.is_moderator);
+  const serverIsEmpire = Boolean(serverUser.is_empire);
   const nextIsMod = owner && email === owner ? false : serverIsMod;
-  if (Boolean(currentUser.is_moderator) === nextIsMod) return false;
-  currentUser = { ...currentUser, is_moderator: nextIsMod };
+  const nextIsEmpire = owner && email === owner ? false : serverIsEmpire;
+  if (Boolean(currentUser.is_moderator) === nextIsMod && Boolean(currentUser.is_empire) === nextIsEmpire) return false;
+  currentUser = { ...currentUser, is_moderator: nextIsMod, is_empire: nextIsEmpire };
   saveCurrentUserRecord(currentUser);
   persistAuthSession();
   updateAuthUI();
@@ -1434,6 +1436,7 @@ function normalizeAuthUserRecord(user) {
         ],
     is_admin: Boolean(user.is_admin),
     is_moderator: Boolean(user.is_moderator),
+    is_empire: Boolean(user.is_empire),
     points: Number(user.points) || 0,
     price_count: Number(user.price_count) || 0,
     created_at: user.created_at || new Date().toISOString(),
@@ -1914,6 +1917,11 @@ function isModeratorUser() {
   return MODERATOR_EMAILS.length > 0 && MODERATOR_EMAILS.includes(email);
 }
 
+function isEmpireUser() {
+  if (!currentUser) return false;
+  return Boolean(currentUser.is_empire);
+}
+
 function isStaffUser() {
   return isAdminUser() || isModeratorUser();
 }
@@ -2126,7 +2134,10 @@ ${users
 <td style="padding:8px 6px;white-space:nowrap;">${fmt(u.last_signin_at)}</td>
 <td style="padding:8px 6px;">${getAdminRolePill(u)}</td>
 <td style="padding:8px 6px;white-space:nowrap;">
-${u.is_admin ? '<span style="color:var(--muted);">Owner</span>' : u.is_moderator ? `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', false)">Remove Mod</button>` : `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', true)">Give Mod</button>`}
+${u.is_admin ? '<span style="color:var(--muted);">Owner</span>' : `
+  ${u.is_moderator ? `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', false)">Remove Mod</button>` : `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', true)">Give Mod</button>`}
+  ${u.is_empire ? `<button class="btn-sm" onclick="adminSetServerEmpire('${escapeHtml(u.email)}', false)">Remove Empire</button>` : `<button class="btn-sm" onclick="adminSetServerEmpire('${escapeHtml(u.email)}', true)">Give Empire</button>`}
+`}
 </td>
 </tr>`
   )
@@ -2140,6 +2151,7 @@ ${u.is_admin ? '<span style="color:var(--muted);">Owner</span>' : u.is_moderator
 
 function getAdminRolePill(user) {
   if (user?.is_admin) return '<span class="role-pill admin">Admin</span>';
+  if (user?.is_empire) return '<span class="role-pill empire">Empire</span>';
   if (user?.is_moderator) return '<span class="role-pill mod">Mod</span>';
   return '<span class="role-pill">User</span>';
 }
@@ -2152,6 +2164,8 @@ function renderAdminOverview() {
   const modEmails = new Set();
   localUsers.filter(u => u.is_moderator).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
   registryUsers.filter(u => u.is_moderator).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
+  localUsers.filter(u => u.is_empire).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
+  registryUsers.filter(u => u.is_empire).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
   const openTickets = (state?.tickets || []).filter(t => String(t.status || 'open') !== 'closed').length;
   const pendingListings = (state?.marketplace_listings || []).filter(l => String(l.status || '') === 'pending').length;
   const values = {
@@ -2206,7 +2220,9 @@ function renderAdminRoleTarget() {
   el.innerHTML = `
     <strong>${escapeHtml(user.display_name || user.email)}</strong> ${getAdminRolePill({ ...user, is_admin: isOwner || user.is_admin })}
     <br><span style="color:var(--muted);">${escapeHtml(user.email)}</span>
-    ${user.moderator_updated_at ? `<br><span style="color:var(--hint);">Role updated ${escapeHtml(user.moderator_updated_at)}</span>` : ''}
+    ${user.is_empire ? '<br><span style="color:var(--green);">Empire grants free Founder access.</span>' : ''}
+    ${user.moderator_updated_at ? `<br><span style="color:var(--hint);">Mod updated ${escapeHtml(user.moderator_updated_at)}</span>` : ''}
+    ${user.empire_updated_at ? `<br><span style="color:var(--hint);">Empire updated ${escapeHtml(user.empire_updated_at)}</span>` : ''}
   `;
 }
 
@@ -2224,19 +2240,29 @@ function setAdminRoleResult(message = '', tone = 'muted') {
 }
 
 async function adminSetServerModerator(targetEmail, wantModerator) {
+  return adminSetServerRole(targetEmail, 'moderator', wantModerator);
+}
+
+async function adminSetServerEmpire(targetEmail, wantEmpire) {
+  return adminSetServerRole(targetEmail, 'empire', wantEmpire);
+}
+
+async function adminSetServerRole(targetEmail, role, enabled) {
   if (!isAdminUser() || !currentUser) return { ok: false, error: 'Only the site owner can change moderator status.' };
   const email = String(targetEmail || '').trim().toLowerCase();
   if (!email || !email.includes('@')) return { ok: false, error: 'Enter a valid email.' };
   const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
   if (owner && email === owner) return { ok: false, error: 'The owner account already has full access.' };
-  if (email === String(currentUser.email || '').trim().toLowerCase()) return { ok: false, error: 'You cannot change your own moderator status here.' };
-  if (wantModerator && isEmailBanned(email)) return { ok: false, error: 'Unban this email before making them a moderator.' };
+  if (email === String(currentUser.email || '').trim().toLowerCase()) return { ok: false, error: 'You cannot change your own role here.' };
+  if (enabled && isEmailBanned(email)) return { ok: false, error: `Unban this email before granting ${role}.` };
 
   const base = getBillingFunctionsBase();
   const key = getAdminRegistryApiKey();
   const knownUser = getAdminKnownUsers().find(u => String(u.email || '').toLowerCase() === email);
   if (!base || !key) {
-    const local = adminSetUserModerator(email, wantModerator);
+    const local = role === 'moderator'
+      ? adminSetUserModerator(email, enabled)
+      : adminSetUserEmpire(email, enabled);
     if (local.ok) {
       renderAdminOverview();
       populateAdminRoleSuggestions();
@@ -2252,10 +2278,11 @@ async function adminSetServerModerator(targetEmail, wantModerator) {
         'X-Impact-Admin-Key': key
       },
       body: JSON.stringify({
-        action: 'set_moderator',
+        action: role === 'empire' ? 'set_empire' : 'set_moderator',
         email,
         display_name: knownUser?.display_name || email,
-        is_moderator: Boolean(wantModerator),
+        is_moderator: role === 'moderator' ? Boolean(enabled) : undefined,
+        is_empire: role === 'empire' ? Boolean(enabled) : undefined,
         updated_by: currentUser.email || 'admin'
       })
     });
@@ -2265,10 +2292,14 @@ async function adminSetServerModerator(targetEmail, wantModerator) {
     const localUsers = loadAuthUsers();
     const idx = localUsers.findIndex(u => String(u.email || '').toLowerCase() === email);
     if (idx !== -1 && !localUsers[idx].is_admin) {
-      localUsers[idx] = { ...localUsers[idx], is_moderator: Boolean(wantModerator) };
+      localUsers[idx] = {
+        ...localUsers[idx],
+        ...(role === 'moderator' ? { is_moderator: Boolean(enabled) } : {}),
+        ...(role === 'empire' ? { is_empire: Boolean(enabled) } : {})
+      };
       saveAuthUsers(localUsers);
     }
-    setAdminRegistryStatus(`Updated ${email}: ${wantModerator ? 'moderator' : 'regular user'}.`, 'success');
+    setAdminRegistryStatus(`Updated ${email}: ${enabled ? role : `not ${role}`}.`, 'success');
     renderAdminSiteRegistry();
     renderAdminUserList();
     renderAdminOverview();
@@ -2281,6 +2312,30 @@ async function adminSetServerModerator(targetEmail, wantModerator) {
   }
 }
 
+function adminSetUserEmpire(targetEmail, wantEmpire) {
+  if (!isAdminUser() || !currentUser) {
+    return { ok: false, error: 'Only the site owner can change Empire status.' };
+  }
+  const email = String(targetEmail || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return { ok: false, error: 'Enter a valid email.' };
+  if (email === String(currentUser.email || '').toLowerCase()) {
+    return { ok: false, error: 'You cannot change Empire status on your own account here.' };
+  }
+  const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
+  if (owner && email === owner) {
+    return { ok: false, error: 'The owner account already has full access.' };
+  }
+  const users = loadAuthUsers();
+  const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === email);
+  if (idx === -1) return { ok: false, error: 'No auth record for that email in this browser.' };
+  const target = users[idx];
+  if (target?.is_admin) return { ok: false, error: 'Admin accounts are not toggled as Empire.' };
+  users[idx] = { ...target, is_empire: Boolean(wantEmpire) };
+  saveAuthUsers(users);
+  updateAuthUI();
+  return { ok: true };
+}
+
 async function adminRoleGrantMod() {
   setAdminRoleResult('Updating role...', 'muted');
   const r = await adminSetServerModerator(getAdminRoleTargetEmail(), true);
@@ -2291,6 +2346,18 @@ async function adminRoleRevokeMod() {
   setAdminRoleResult('Updating role...', 'muted');
   const r = await adminSetServerModerator(getAdminRoleTargetEmail(), false);
   setAdminRoleResult(r.ok ? (r.warning || 'Moderator access removed.') : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+}
+
+async function adminRoleGrantEmpire() {
+  setAdminRoleResult('Updating Empire role...', 'muted');
+  const r = await adminSetServerEmpire(getAdminRoleTargetEmail(), true);
+  setAdminRoleResult(r.ok ? (r.warning || 'Empire role granted. This user now gets free Founder access.') : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+}
+
+async function adminRoleRevokeEmpire() {
+  setAdminRoleResult('Updating Empire role...', 'muted');
+  const r = await adminSetServerEmpire(getAdminRoleTargetEmail(), false);
+  setAdminRoleResult(r.ok ? (r.warning || 'Empire role removed.') : `Error: ${r.error}`, r.ok ? 'success' : 'error');
 }
 
 async function refreshAdminDashboard() {
@@ -2359,8 +2426,8 @@ function renderAdminUserList() {
       <tbody>
         ${users.map(u => {
           const isOwner = String(u.email || '').toLowerCase() === String(OWNER_ADMIN_EMAIL || '').toLowerCase();
-          const role = u.is_admin ? '👑 Admin' : u.is_moderator ? '🛡️ Mod' : 'User';
-          const roleColor = u.is_admin ? 'var(--green)' : u.is_moderator ? 'var(--accent)' : 'var(--muted)';
+          const role = u.is_admin ? '👑 Admin' : u.is_empire ? '🏰 Empire' : u.is_moderator ? '🛡️ Mod' : 'User';
+          const roleColor = u.is_admin ? 'var(--green)' : u.is_empire ? 'var(--green)' : u.is_moderator ? 'var(--accent)' : 'var(--muted)';
           const trustScore = getUserTrustScore(u);
           const trustColor = trustScore >= 5 ? 'var(--green)' : trustScore >= 2 ? 'var(--amber)' : 'var(--muted)';
           return `<tr style="border-bottom:1px solid var(--border);">
@@ -2374,6 +2441,7 @@ function renderAdminUserList() {
               ${isOwner ? '<span style="color:var(--muted);">Owner</span>' : `
                 ${!u.is_admin ? `<button class="btn-sm" onclick="adminGiveMod('${escapeHtml(u.email)}')">Give Mod</button>` : ''}
                 ${u.is_moderator ? `<button class="btn-sm" onclick="adminRemoveMod('${escapeHtml(u.email)}')">Remove Mod</button>` : ''}
+                ${u.is_empire ? `<button class="btn-sm" onclick="adminSetServerEmpire('${escapeHtml(u.email)}', false)">Remove Empire</button>` : `<button class="btn-sm" onclick="adminSetServerEmpire('${escapeHtml(u.email)}', true)">Give Empire</button>`}
                 <button class="btn-sm" onclick="adminViewUserDetails('${escapeHtml(u.email)}')">View</button>
               `}
             </td>
@@ -2855,6 +2923,7 @@ function adminLookupProfile() {
         <div style="font-size:12px;margin-bottom:8px;">
           <span style="color:var(--hint);">Plan:</span> <span style="color:${isUserAdmin ? 'var(--amber)' : 'var(--text)'};font-weight:600;">${displayPlan}</span>
           ${isUserAdmin ? '<span style="color:var(--red);margin-left:8px;">[OWNER]</span>' : ''}
+          ${authUser.is_empire && !isUserAdmin ? '<span style="color:var(--green);margin-left:8px;">[EMPIRE · FOUNDER]</span>' : ''}
           ${authUser.is_moderator && !isUserAdmin ? '<span style="color:var(--amber);margin-left:8px;">[MOD]</span>' : ''}
           <span style="margin-left:8px;">Trust: <span style="color:${getUserTrustScore(authUser) >= 5 ? 'var(--green)' : getUserTrustScore(authUser) >= 2 ? 'var(--amber)' : 'var(--muted)'};font-weight:600;">${getUserTrustScore(authUser).toFixed(1)}</span></span>
         </div>
@@ -4085,9 +4154,11 @@ function updateAuthUI() {
   if (currentUser) {
     const isAdmin = isAdminUser();
     const isMod = isModeratorUser() && !isAdmin;
+    const isEmpire = isEmpireUser() && !isAdmin;
     const trustScore = getUserTrustScore(currentUser);
     const trustLabel = trustScore >= 5 ? 'Trusted' : trustScore >= 2 ? 'Member' : 'New';
     if (isAdmin) pill.textContent = `Founder · Admin`;
+    else if (isEmpire) pill.textContent = `Founder · Empire`;
     else if (isMod) pill.textContent = `${trustLabel} · Mod`;
     else pill.textContent = trustLabel;
     nameEl.textContent = currentUser.display_name || currentUser.email;
@@ -4306,6 +4377,7 @@ async function submitAuthForm() {
       email_verified: false,
       is_admin: false,
       is_moderator: false,
+      is_empire: false,
       verification_code: '',
       verification_sent_at: null,
       verification_expires_at: null,
@@ -4478,18 +4550,21 @@ function reconcileExpiredPaidPro() {
 
 function getCurrentPlan() {
   if (isAdminUser()) return 'founder';
+  if (isEmpireUser()) return 'founder';
   const plan = state?.subscription?.plan || 'free';
   return ['free', 'pro', 'founder'].includes(plan) ? plan : 'free';
 }
 
 function isProUser() {
   if (isAdminUser()) return true;
+  if (isEmpireUser()) return true;
   const plan = state?.subscription?.plan || 'free';
   return plan === 'pro' || plan === 'founder';
 }
 
 function isFounderUser() {
   if (isAdminUser()) return true;
+  if (isEmpireUser()) return true;
   return getCurrentPlan() === 'founder';
 }
 
@@ -4512,6 +4587,7 @@ function getPlanLabel() {
     if (when) return `Pro · ends ${when}`;
     return 'Pro $7 / 30 days';
   }
+  if (plan === 'founder' && isEmpireUser()) return 'Founder · Empire';
   if (plan === 'founder') return 'Founder';
   return 'Free';
 }

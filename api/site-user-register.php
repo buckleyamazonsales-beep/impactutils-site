@@ -64,6 +64,7 @@ $ok = impact_registry_merge(function (&$users) use ($email, $displayName, $event
             'email_verified_at' => null,
             'last_signin_at' => null,
             'is_moderator' => false,
+            'is_empire' => false,
             'is_admin' => false,
         ];
         if ($createdClient !== '') {
@@ -122,6 +123,7 @@ lemon_json_exit(200, [
         'email' => $email,
         'display_name' => (string)($storedUser['display_name'] ?? $displayName),
         'is_moderator' => !empty($storedUser['is_moderator']),
+        'is_empire' => !empty($storedUser['is_empire']),
         'is_admin' => !empty($storedUser['is_admin']),
     ],
 ]);
