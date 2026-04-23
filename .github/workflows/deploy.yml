@@ -66,6 +66,23 @@ jobs:
               for key, value in values.items():
                   fh.write(f"    '{key}' => {php_string(value)},\n")
               fh.write("];\n")
+
+          lemon_values = {
+              "LEMONSQUEEZY_API_KEY": os.environ.get("LEMONSQUEEZY_API_KEY", ""),
+              "LEMONSQUEEZY_WEBHOOK_SECRET": os.environ.get("LEMONSQUEEZY_WEBHOOK_SECRET", ""),
+              "LEMONSQUEEZY_STORE_ID": os.environ.get("LEMONSQUEEZY_STORE_ID", ""),
+              "LEMONSQUEEZY_VARIANT_PRO": os.environ.get("LEMONSQUEEZY_VARIANT_PRO", ""),
+              "LEMONSQUEEZY_VARIANT_FOUNDER": os.environ.get("LEMONSQUEEZY_VARIANT_FOUNDER", ""),
+              "LEMONSQUEEZY_TEST_MODE": os.environ.get("LEMONSQUEEZY_TEST_MODE", ""),
+              "IMPACT_PUBLIC_SITE_URL": values["IMPACT_PUBLIC_SITE_URL"],
+              "IMPACT_ADMIN_API_KEY": values["IMPACT_ADMIN_API_KEY"],
+          }
+
+          with open("api/lemon-secrets.php", "w", encoding="utf-8") as fh:
+              fh.write("<?php\nreturn [\n")
+              for key, value in lemon_values.items():
+                  fh.write(f"    '{key}' => {php_string(value)},\n")
+              fh.write("];\n")
           PY
 
       - name: Deploy via SFTP with lftp
@@ -100,6 +117,7 @@ jobs:
           put -O api api/forgot-password.php
           put -O api api/hiscores.php
           put -O api api/lemon-env.php
+          put -O api api/lemon-secrets.php
           put -O api api/lemon-secrets.example.php
           put -O api api/lemonsqueezy-webhook.php
           put -O api api/recover-billing.php
