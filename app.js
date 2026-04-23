@@ -2615,49 +2615,11 @@ function getDungeonLinksForMonster(monsterName) {
     .map(([dungeon]) => dungeon);
 }
 
-function getDungeonMapImage(row, monsters = []) {
+function getDungeonMapImage(row) {
   if (!row || row.category !== 'Dungeons') return '';
   const target = normalizeMapName(row.name);
   const wikiKey = Object.keys(DUNGEON_MAP_IMAGES).find(name => normalizeMapName(name) === target);
-  if (wikiKey) return DUNGEON_MAP_IMAGES[wikiKey];
-  const labels = monsters.length ? monsters.slice(0, 6) : [row.name, 'Entry', 'Route', 'Boss room'];
-  const rooms = [
-    { x: 88, y: 182, w: 122, h: 86 },
-    { x: 260, y: 96, w: 146, h: 98 },
-    { x: 468, y: 168, w: 148, h: 104 },
-    { x: 286, y: 292, w: 178, h: 98 },
-    { x: 616, y: 332, w: 126, h: 78 },
-    { x: 96, y: 370, w: 138, h: 76 }
-  ];
-  const roomMarkup = rooms.map((room, index) => {
-    const label = labels[index % labels.length];
-    return `
-      <rect x="${room.x}" y="${room.y}" width="${room.w}" height="${room.h}" rx="20" fill="rgba(10,31,35,0.92)" stroke="${index === 0 ? '#3dd9c5' : '#2e5f61'}" stroke-width="3"/>
-      <text x="${room.x + 16}" y="${room.y + 32}" fill="#e9f7f4" font-size="17" font-family="Verdana, sans-serif" font-weight="700">${escapeHtml(label)}</text>
-      <text x="${room.x + 16}" y="${room.y + 56}" fill="#9fb8b4" font-size="12" font-family="Verdana, sans-serif">${index === 0 ? 'Entry' : index === 4 ? 'Deep room' : 'Spawn area'}</text>
-    `;
-  }).join('');
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="820" height="520" viewBox="0 0 820 520" role="img" aria-label="${escapeHtml(row.name)} dungeon map">
-      <defs>
-        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="#071719"/>
-          <stop offset="0.55" stop-color="#0d2528"/>
-          <stop offset="1" stop-color="#201b10"/>
-        </linearGradient>
-        <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-      <rect width="820" height="520" rx="30" fill="url(#bg)"/>
-      <path d="M150 226 C230 226 214 144 332 144 S432 219 542 219 C646 219 594 372 678 371 M350 194 C350 264 371 278 374 292 M210 414 C264 394 286 352 318 338" fill="none" stroke="#6b5a2d" stroke-width="24" stroke-linecap="round" opacity="0.58"/>
-      <path d="M150 226 C230 226 214 144 332 144 S432 219 542 219 C646 219 594 372 678 371 M350 194 C350 264 371 278 374 292 M210 414 C264 394 286 352 318 338" fill="none" stroke="#2bc4b4" stroke-width="5" stroke-linecap="round" stroke-dasharray="12 14" opacity="0.9" filter="url(#glow)"/>
-      ${roomMarkup}
-      <circle cx="149" cy="226" r="11" fill="#59f0a8" filter="url(#glow)"/>
-      <text x="42" y="54" fill="#3dd9c5" font-size="15" font-family="Verdana, sans-serif" font-weight="700" letter-spacing="2">IMPACT DUNGEON MAP</text>
-      <text x="42" y="88" fill="#fff2bf" font-size="30" font-family="Verdana, sans-serif" font-weight="800">${escapeHtml(row.name)}</text>
-      <text x="42" y="116" fill="#9fb8b4" font-size="14" font-family="Verdana, sans-serif">Route sketch with known monster areas from the teleport directory.</text>
-    </svg>
-  `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  return wikiKey ? DUNGEON_MAP_IMAGES[wikiKey] : '';
 }
 
 function getDungeonMapAnnotations(row) {
@@ -2735,12 +2697,11 @@ function renderMaps() {
   `).join('');
   const dungeonMonsters = selected ? getDungeonMonsterLinks(selected.name) : [];
   const monsterDungeons = selected?.category !== 'Dungeons' ? getDungeonLinksForMonster(selected.name) : [];
-  const dungeonMapSrc = selected ? getDungeonMapImage(selected, dungeonMonsters) : '';
-  const dungeonAnnotations = selected ? getDungeonMapAnnotations(selected) : [];
-  const dungeonMapFromWiki = selected ? Object.keys(DUNGEON_MAP_IMAGES).some(name => normalizeMapName(name) === normalizeMapName(selected.name)) : false;
+  const dungeonMapSrc = selected ? getDungeonMapImage(selected) : '';
+  const dungeonAnnotations = dungeonMapSrc && selected ? getDungeonMapAnnotations(selected) : [];
   const dungeonMapMarkup = dungeonMapSrc ? `
     <div class="map-image-panel">
-      <div class="maps-mini-heading">${dungeonMapFromWiki ? 'OSRS Wiki Dungeon Map' : 'Dungeon Map'}</div>
+      <div class="maps-mini-heading">OSRS Wiki Dungeon Map</div>
       <div class="dungeon-map-stage">
         <img class="dungeon-map-image" src="${dungeonMapSrc}" alt="${escapeHtml(selected.name)} dungeon map">
         ${dungeonAnnotations.map(note => `<div class="dungeon-map-label" style="left:${note.left}%;top:${note.top}%;">${escapeHtml(note.label)}</div>`).join('')}
