@@ -2107,6 +2107,10 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+function inlineJsString(value) {
+  return JSON.stringify(String(value ?? '')).replace(/'/g, '&#39;').replace(/</g, '\\u003c');
+}
+
 function setAdminRegistryStatus(message = '', tone = 'muted') {
   const el = document.getElementById('admin-registry-status');
   if (!el) return;
@@ -2393,66 +2397,191 @@ function renderLeaderboard() {
   }).join('');
 }
 
-const STARTER_TELEPORTS = [
-  { id: 'starter-home', category: 'Home', name: 'Home Hub', path: 'Teleport Tree -> Home', use_case: 'Core bank, shops, services, and return point.', requirements: 'None', risk: 'Safe', gear: 'Any', notes: 'Starter placeholder. Update the exact tree path if Impact labels it differently.', verified: false, updated_at: 1, updated_by: 'Starter' },
-  { id: 'starter-bosses', category: 'Bosses', name: 'Bosses Category', path: 'Teleport Tree -> Bosses', use_case: 'Add each boss here as you verify exact menu names.', requirements: 'Varies by boss', risk: 'Medium', gear: 'Boss setup', notes: 'Use Admin to add individual boss destinations with banking and gear notes.', verified: false, updated_at: 1, updated_by: 'Starter' },
-  { id: 'starter-slayer', category: 'Slayer', name: 'Slayer Category', path: 'Teleport Tree -> Slayer', use_case: 'Task locations and route notes.', requirements: 'Task dependent', risk: 'Low', gear: 'Task gear', notes: 'Add tasks with safespot, cannon/barrage, and drop notes as confirmed.', verified: false, updated_at: 1, updated_by: 'Starter' },
-  { id: 'starter-skilling', category: 'Skilling', name: 'Skilling Category', path: 'Teleport Tree -> Skilling', use_case: '1-99 gathering and production locations.', requirements: 'Skill level dependent', risk: 'Safe', gear: 'Tools/supplies', notes: 'Connect this with the Skilling tab over time.', verified: false, updated_at: 1, updated_by: 'Starter' },
-  { id: 'starter-wilderness', category: 'Wilderness', name: 'Wilderness Category', path: 'Teleport Tree -> Wilderness', use_case: 'Risk routes, PK zones, resource spots, and escape notes.', requirements: 'Risk tolerance', risk: 'Wilderness', gear: 'Low-risk gear cap', notes: 'Mark multi, escape routes, and recommended value cap for every Wilderness destination.', verified: false, updated_at: 1, updated_by: 'Starter' },
-  { id: 'starter-shops', category: 'Shops', name: 'Shops Category', path: 'Teleport Tree -> Shops', use_case: 'Supply runs, skilling purchases, and account setup.', requirements: 'None', risk: 'Safe', gear: 'Cash stack as needed', notes: 'Add shop names and best-use notes as verified.', verified: false, updated_at: 1, updated_by: 'Starter' },
-];
+let mapCategoryMode = 'All';
+let selectedTeleportId = '';
+
+const IMPACT_MENU_TELEPORTS = [
+  ['Raids', 'Tombs Of Amascut', 'The very incarnation of destruction.', 'Medium'],
+  ['Raids', 'Theatre Of Blood', "The vampyre noble Verzik Vitur's castle.", 'High'],
+  ['Raids', 'Chambers Of Xeric', 'Twisted trials beneath Mount Quidamortem.', 'Medium'],
+  ['Monsters', 'Aquanites', 'What a pretty light... So shiny!', 'Low'],
+  ['Monsters', 'Rock Crabs', 'Rocky surprise from Rellekka shores.', 'Safe'],
+  ['Monsters', 'Sand Crabs', 'Idle killers love these harmless sandy rocks.', 'Safe'],
+  ['Monsters', 'Yaks', 'Peaceful beasts, perfect punching bags.', 'Safe'],
+  ['Monsters', 'Slayer Tower', 'Haunted halls of cursed slayers.', 'Low'],
+  ['Monsters', 'Gemstone Crab', 'Vibrant crab, perfect for idle training.', 'Safe'],
+  ['Monsters', 'Bandit Camp', 'Desert rogues gathered together.', 'Low'],
+  ['Dungeons', 'Morytania Spider Cave', "Araxxor's den, few return alive.", 'Medium'],
+  ['Dungeons', 'Godwars', 'Gods clash deep in snow.', 'High'],
+  ['Dungeons', 'Catacombs', 'Depths crawling with corrupted power.', 'Medium'],
+  ['Dungeons', 'Ancient Guthixian Temple', 'Lair of the tormented demons.', 'Medium'],
+  ['Dungeons', 'Crash Site Cavern', 'Twisted gorillas born from chaos.', 'Medium'],
+  ['Dungeons', "Zemouregal's Base", 'Armoured dead serve in silence.', 'Medium'],
+  ['Dungeons', 'Iorwerth Dungeon', 'Dark elves guard crystal secrets.', 'Medium'],
+  ['Dungeons', "Jormungand's Prison", 'Gaze wrong - become stone.', 'Medium'],
+  ['Dungeons', 'Kraken Cove', 'Tentacles slumber in watery dark.', 'Medium'],
+  ['Dungeons', 'Ancient Cavern', 'Whirlpool guards draconic secrets.', 'Medium'],
+  ['Dungeons', 'Wyvern Cave', 'Frozen fossils hold deadly breath.', 'Medium'],
+  ['Dungeons', 'Brimhaven Dungeon', 'Fiery beasts roam the depths.', 'Medium'],
+  ['Dungeons', 'Taverley Dungeon', 'Massive lair of deadly chaos.', 'Medium'],
+  ['Dungeons', 'Waterfall Dungeon', 'Water hides a fiery heart.', 'Medium'],
+  ['Dungeons', 'Asgarnian Ice Dungeon', 'Frozen paths and icy monsters.', 'Medium'],
+  ['Bosses', 'Demonic Brutus', "Doesn't look particularly happy.", 'High'],
+  ['Bosses', 'Doom of Mokhaiotl', 'Hunched titan, crawling dread.', 'High'],
+  ['Bosses', 'Yama', 'Infernal arbiter of unending doom.', 'High'],
+  ['Bosses', 'Shellbane gryphon', 'A calamity to all tortugan-kind.', 'High'],
+  ['Bosses', 'Phantom Muspah', 'Shapeshifter of the frozen realm.', 'High'],
+  ['Bosses', 'Duke Sucellus', 'Cursed noble with many eyes.', 'High'],
+  ['Bosses', 'Vardorvis', 'Blood-hungry beast of shadows.', 'High'],
+  ['Bosses', 'The Whisperer', 'Voices whisper from watery depths.', 'High'],
+  ['Bosses', 'Leviathan', 'Sea monster beyond mortal understanding.', 'High'],
+  ['Bosses', 'Zulrah', 'Toxic serpent of shifting forms.', 'High'],
+  ['Bosses', 'Amoxliatl', 'Frostbitten beast of forgotten rites.', 'High'],
+  ['Bosses', 'Xamphur', 'Master of corrupted magic.', 'High'],
+  ['Bosses', 'Vorkath', "This won't be fun.", 'High'],
+  ['Bosses', 'Alchemical Hydra', 'Hydra forged by twisted science.', 'High'],
+  ['Bosses', 'Sarachnis', 'Broodmother of the temple crypt.', 'Medium'],
+  ['Bosses', 'Cerberus', 'Triple-headed hound of hell.', 'High'],
+  ['Bosses', 'Dagannoth Kings', 'Three kings beneath the waves.', 'Medium'],
+  ['Bosses', 'Nightmare Of Ashihama', 'Horrors feeding on shared dreams.', 'High'],
+  ['Bosses', 'Moons of Peril', 'Three imprisoned nagua seek freedom.', 'Medium'],
+  ['Minigames', 'Duel Arena', 'Ancient arena of risky wagers.', 'Safe'],
+  ['Minigames', 'Barrows', 'Restless brothers guard their tombs.', 'Medium'],
+  ['Minigames', 'Castle Wars', 'Saradomin vs Zamorak forevermore.', 'Safe'],
+  ['Minigames', 'Flower Poker Area', 'Community gambling area.', 'Safe'],
+  ['Skilling', 'Gnome Stronghold Agility Course', 'Where agility training begins.', 'Safe'],
+  ['Skilling', 'Werewolf Agility Course', 'Leap moonlit logs, dodge hungry werewolves!', 'Safe'],
+  ['Skilling', 'Fishing Guild', 'Guild of the seasoned anglers.', 'Safe'],
+  ['Skilling', 'Farming Guild', "Farms, patches, and Hespori's den.", 'Safe'],
+  ['Skilling', 'Barbarian Fishing', 'Fast fishing and strength training.', 'Safe'],
+  ['Skilling', 'Dense Runestone', 'Carve dense stone for runecraft.', 'Safe'],
+  ['Skilling', 'Varrock Oaks', 'Chop oaks near the castle.', 'Safe'],
+  ['Skilling', 'Draynor Willow', 'Willows sway in Draynor winds.', 'Safe'],
+  ['Skilling', 'Camelot Maple', "Cut trees near Arthur's realm.", 'Safe'],
+  ['Skilling', 'Magic Trees', 'High level woodcutting trees.', 'Safe'],
+  ['Cities', 'Edgeville', 'Haunted hamlet reborn with danger.', 'Safe'],
+  ['Cities', 'Varrock', 'The heart of Misthalin empire.', 'Safe'],
+  ['Cities', 'Lumbridge', 'Humble start for many adventurers.', 'Safe'],
+  ['Cities', 'Al Kharid', 'Desert jewel of the Kharid.', 'Safe'],
+  ['Cities', 'Draynor', 'Cursed village plagued by vampyres.', 'Safe'],
+  ['Cities', "Elves' Haven", "Elves' sanctuary for skilling and serenity.", 'Safe'],
+  ['Cities', 'Fossil Island', 'Foul beasts stalk forgotten bones.', 'Safe'],
+  ['Cities', 'Taverley', "Guthix's quiet grove of balance.", 'Safe'],
+  ['Cities', 'Lletya', 'Hidden sanctuary of rebel elves.', 'Safe'],
+  ['Cities', 'Yanille', 'Fortified city bordering ogre lands.', 'Safe'],
+  ['Cities', 'Falador', "White Knights' bastion of order.", 'Safe'],
+  ['Cities', 'Camelot', "King Arthur's mythic stronghold stands.", 'Safe'],
+  ['Cities', 'Ardougne', 'Divided city of thieves and trade.', 'Safe'],
+  ['Cities', 'Prifddinas', 'The crystalline capital of elves.', 'Safe'],
+  ['Cities', 'Catherby', "Seaside village of fishers' fortune.", 'Safe'],
+  ['Cities', 'Brimhaven', 'Pirate port ruled by Pete.', 'Safe'],
+  ['Cities', 'Hosidius', 'Farming haven in Kourend lands.', 'Safe'],
+  ['Cities', 'Watch Tower', 'Gaze over threats from Yanille.', 'Safe'],
+  ['Cities', 'Trollheim', 'Mountain pass toward troll territory.', 'Safe'],
+  ['Wilderness', 'Graveyard Of Shadows', 'Carrallangar - cursed with decay.', 'Wilderness'],
+  ['Wilderness', 'Revenants', 'Ghosts of warriors past return.', 'Wilderness'],
+  ['Wilderness', 'Fountain Of Rune', 'Ancient fountain brimming with energy.', 'Wilderness'],
+  ['Wilderness', 'Ice Plateau', 'Frozen ruin known as Ghorrock.', 'Wilderness'],
+  ['Wilderness', 'Demonic Ruins', "Zamorak's shrine of unrest.", 'Wilderness'],
+  ['Wilderness', 'Ferox Enclave', 'Wilderness refuge for rest, safety, and supplies.', 'Wilderness'],
+  ['Wilderness', 'Chaos Temple', "Zamorak's shrine of unrest.", 'Wilderness'],
+  ['Wilderness', 'Corporeal Beast', 'Spirit beast with devastating power.', 'Wilderness'],
+  ['Wilderness', 'Chinchompa Hill', 'Hunted rodents, hunted players.', 'Wilderness'],
+  ['Wilderness', 'Zombie Pirates', 'Undead pirates battle for chaos.', 'Wilderness'],
+  ['Wilderness', 'Slayer Cave', 'Wilderness cave crawling with monsters.', 'Wilderness'],
+  ['Wilderness', 'Mage Bank', "Wizards' refuge under constant threat.", 'Wilderness'],
+].map(([category, name, use_case, risk]) => ({
+  id: `impact-${category}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+  category,
+  name,
+  path: `Teleport Tree -> ${category} -> ${name}`,
+  use_case,
+  requirements: 'None listed',
+  risk,
+  gear: risk === 'Wilderness' ? 'Low-risk setup recommended' : category === 'Bosses' || category === 'Raids' ? 'Combat setup recommended' : 'Any',
+  notes: 'Extracted from the uploaded Impact teleport tree video.',
+  verified: true,
+  updated_at: 1,
+  updated_by: 'OBS teleport recording'
+}));
 
 function getTeleportDirectory() {
   const map = new Map();
-  STARTER_TELEPORTS.forEach(row => map.set(row.id, row));
+  IMPACT_MENU_TELEPORTS.forEach(row => map.set(row.id, row));
   (state.teleports || []).forEach(row => map.set(row.id, row));
   return Array.from(map.values()).sort((a, b) => String(a.category).localeCompare(String(b.category)) || String(a.name).localeCompare(String(b.name)));
 }
 
-function populateMapCategoryFilter() {
-  const select = document.getElementById('maps-category');
-  if (!select) return;
-  const prior = select.value;
-  const categories = [...new Set(getTeleportDirectory().map(row => row.category).filter(Boolean))].sort();
-  select.innerHTML = '<option value="">All categories</option>' + categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
-  if (categories.includes(prior)) select.value = prior;
+function getFilteredTeleports() {
+  const search = String(document.getElementById('maps-search')?.value || '').trim().toLowerCase();
+  const risk = String(document.getElementById('maps-risk')?.value || '').trim();
+  return getTeleportDirectory().filter(row => {
+    const hay = [row.category, row.name, row.path, row.use_case, row.requirements, row.risk, row.gear, row.notes].join(' ').toLowerCase();
+    return (!search || hay.includes(search)) && (mapCategoryMode === 'All' || row.category === mapCategoryMode) && (!risk || row.risk === risk);
+  });
+}
+
+function selectMapCategory(category = 'All') {
+  mapCategoryMode = category || 'All';
+  selectedTeleportId = '';
+  renderMaps();
+}
+
+function selectMapDestination(id) {
+  selectedTeleportId = id || '';
+  renderMaps();
 }
 
 function renderMaps() {
-  const grid = document.getElementById('maps-grid');
-  if (!grid) return;
-  populateMapCategoryFilter();
-  const search = String(document.getElementById('maps-search')?.value || '').trim().toLowerCase();
-  const category = String(document.getElementById('maps-category')?.value || '').trim();
-  const risk = String(document.getElementById('maps-risk')?.value || '').trim();
-  const rows = getTeleportDirectory().filter(row => {
-    const hay = [row.category, row.name, row.path, row.use_case, row.requirements, row.risk, row.gear, row.notes].join(' ').toLowerCase();
-    return (!search || hay.includes(search)) && (!category || row.category === category) && (!risk || row.risk === risk);
-  });
+  const rail = document.getElementById('maps-category-rail');
+  const list = document.getElementById('maps-destination-list');
+  const detail = document.getElementById('maps-detail-panel');
+  const count = document.getElementById('maps-count');
+  if (!rail || !list || !detail) return;
+  const rows = getFilteredTeleports();
+  const allRows = getTeleportDirectory();
+  const categories = ['All', ...new Set(allRows.map(row => row.category).filter(Boolean))];
+  if (!selectedTeleportId || !rows.some(row => row.id === selectedTeleportId)) {
+    selectedTeleportId = rows[0]?.id || '';
+  }
+  const selected = rows.find(row => row.id === selectedTeleportId) || rows[0] || null;
+  rail.innerHTML = categories.map(category => {
+    const total = category === 'All' ? allRows.length : allRows.filter(row => row.category === category).length;
+    return `<button class="map-category-btn ${mapCategoryMode === category ? 'active' : ''}" onclick='selectMapCategory(${inlineJsString(category)})'><span>${escapeHtml(category)}</span><strong>${total}</strong></button>`;
+  }).join('');
+  if (count) count.textContent = `${rows.length} destination${rows.length === 1 ? '' : 's'}`;
   if (!rows.length) {
-    grid.innerHTML = '<div class="empty">No teleport destinations match that filter.</div>';
+    list.innerHTML = '<div class="empty compact">No teleport destinations match that filter.</div>';
+    detail.innerHTML = '<div class="map-empty-detail">Try another category, risk filter, or search term.</div>';
     return;
   }
-  grid.innerHTML = rows.map(row => `
-    <div class="map-card ${row.verified ? 'verified' : 'unverified'}">
-      <div class="map-card-top">
-        <div>
-          <div class="map-category">${escapeHtml(row.category)}</div>
-          <div class="map-title">${escapeHtml(row.name)}</div>
-        </div>
-        <span class="map-risk risk-${escapeHtml(String(row.risk || 'safe').toLowerCase())}">${escapeHtml(row.risk || 'Safe')}</span>
-      </div>
-      <div class="map-path">${escapeHtml(row.path || 'Teleport Tree')}</div>
-      <div class="map-detail-grid">
-        <div><span>Use</span><strong>${escapeHtml(row.use_case || 'Add use case')}</strong></div>
-        <div><span>Reqs</span><strong>${escapeHtml(row.requirements || 'None listed')}</strong></div>
-        <div><span>Gear</span><strong>${escapeHtml(row.gear || 'Any')}</strong></div>
-        <div><span>Status</span><strong>${row.verified ? 'Verified' : 'Needs verification'}</strong></div>
-      </div>
-      ${row.notes ? `<div class="map-notes">${escapeHtml(row.notes)}</div>` : ''}
-      ${isAdminUser() && !String(row.id || '').startsWith('starter-') ? `<button class="btn-sm" onclick="editTeleportFromAdmin('${escapeHtml(row.id)}');switchTab('admin')">Edit in Admin</button>` : ''}
-    </div>
+  list.innerHTML = rows.map(row => `
+    <button class="map-destination-row ${selected?.id === row.id ? 'active' : ''}" onclick='selectMapDestination(${inlineJsString(row.id)})'>
+      <span>${escapeHtml(row.category)}</span>
+      <strong>${escapeHtml(row.name)}</strong>
+      <small>${escapeHtml(row.use_case || row.path || 'Teleport destination')}</small>
+    </button>
   `).join('');
+  detail.innerHTML = selected ? `
+    <div class="map-detail-card ${selected.verified ? 'verified' : 'unverified'}">
+      <div class="map-detail-top">
+        <div>
+          <div class="map-category">${escapeHtml(selected.category)}</div>
+          <div class="map-title">${escapeHtml(selected.name)}</div>
+        </div>
+        <span class="map-risk risk-${escapeHtml(String(selected.risk || 'safe').toLowerCase())}">${escapeHtml(selected.risk || 'Safe')}</span>
+      </div>
+      <div class="map-path">${escapeHtml(selected.path || 'Teleport Tree')}</div>
+      <div class="map-detail-grid">
+        <div><span>Use</span><strong>${escapeHtml(selected.use_case || 'Add use case')}</strong></div>
+        <div><span>Reqs</span><strong>${escapeHtml(selected.requirements || 'None listed')}</strong></div>
+        <div><span>Gear</span><strong>${escapeHtml(selected.gear || 'Any')}</strong></div>
+        <div><span>Status</span><strong>${selected.verified ? 'Video extracted' : 'Needs verification'}</strong></div>
+      </div>
+      ${selected.notes ? `<div class="map-notes">${escapeHtml(selected.notes)}</div>` : ''}
+      ${isAdminUser() && !String(selected.id || '').startsWith('impact-') ? `<button class="btn-sm" onclick='editTeleportFromAdmin(${inlineJsString(selected.id)});switchTab("admin")'>Edit in Admin</button>` : ''}
+    </div>
+  ` : '';
 }
 
 function setTeleportStatus(message = '', tone = 'muted') {

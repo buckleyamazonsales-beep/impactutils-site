@@ -917,19 +917,16 @@
       <div class="page-header maps-header">
         <div>
           <div class="page-title">Maps & Teleport Tree</div>
-          <div class="page-subtitle">Impact route finder built around the teleport tree. Admins can add exact destinations as we verify them.</div>
+          <div class="page-subtitle">Impact route finder built from your teleport tree recording. Pick a category, select a destination, and keep exact route notes tidy.</div>
         </div>
       </div>
       <div class="maps-control-card card">
         <div>
-          <div class="card-title">Teleport Directory</div>
-          <div class="admin-card-copy">Search bosses, Slayer spots, skilling locations, shops, wilderness routes, and clan notes. Unverified cards are placeholders until confirmed in Impact.</div>
+          <div class="card-title">Teleport Browser</div>
+          <div class="admin-card-copy">Search the extracted Impact destinations by boss, skilling spot, city, wilderness route, or note.</div>
         </div>
         <div class="maps-controls">
           <input type="text" id="maps-search" placeholder="Search destination, use, notes..." oninput="renderMaps()">
-          <select id="maps-category" onchange="renderMaps()">
-            <option value="">All categories</option>
-          </select>
           <select id="maps-risk" onchange="renderMaps()">
             <option value="">All risk levels</option>
             <option value="Safe">Safe</option>
@@ -940,7 +937,23 @@
           </select>
         </div>
       </div>
-      <div class="maps-grid" id="maps-grid"></div>
+      <div class="maps-shell">
+        <aside class="maps-rail card">
+          <div class="maps-mini-heading">Categories</div>
+          <div id="maps-category-rail" class="maps-category-rail"></div>
+        </aside>
+        <section class="maps-list-card card">
+          <div class="maps-list-header">
+            <div>
+              <div class="maps-mini-heading">Destinations</div>
+              <strong id="maps-count">0 destinations</strong>
+            </div>
+            <span>Impact Tree</span>
+          </div>
+          <div id="maps-destination-list" class="maps-destination-list"></div>
+        </section>
+        <section id="maps-detail-panel" class="maps-detail-panel"></section>
+      </div>
     </div>
 
     <div id="panel-slayer" class="panel">

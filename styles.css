@@ -390,7 +390,34 @@
 .leaderboard-score{text-align:right;font-size:16px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
 .maps-header{border-color:rgba(61,217,197,0.24);background:radial-gradient(circle at 88% 18%, rgba(61,217,197,0.18), transparent 32%),linear-gradient(135deg, rgba(10,45,49,0.92), rgba(9,25,28,0.94) 62%, rgba(89,240,168,0.05));}
 .maps-control-card{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;border-color:rgba(61,217,197,0.18);}
-.maps-controls{display:grid;grid-template-columns:minmax(240px,1fr) minmax(160px,0.55fr) minmax(140px,0.45fr);gap:10px;min-width:min(720px,100%);}
+.maps-controls{display:grid;grid-template-columns:minmax(280px,1fr) minmax(160px,0.45fr);gap:10px;min-width:min(620px,100%);}
+.maps-shell{display:grid;grid-template-columns:210px minmax(280px,0.85fr) minmax(360px,1.15fr);gap:16px;align-items:start;}
+.maps-rail,.maps-list-card{position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto;}
+.maps-mini-heading{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:10px;}
+.maps-category-rail{display:grid;gap:8px;}
+.map-category-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.024);color:var(--muted);text-align:left;cursor:pointer;transition:all 0.18s;}
+.map-category-btn span{font-weight:700;color:var(--text);}
+.map-category-btn strong{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--hint);}
+.map-category-btn:hover,.map-category-btn.active{border-color:var(--border2);background:var(--accent-bg);transform:translateX(2px);}
+.map-category-btn.active span,.map-category-btn.active strong{color:var(--accent);}
+.maps-list-card{padding:0;overflow:hidden;}
+.maps-list-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(61,217,197,0.07), rgba(255,255,255,0.01));}
+.maps-list-header strong{font-size:18px;}
+.maps-list-header span{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);letter-spacing:0.1em;text-transform:uppercase;}
+.maps-destination-list{display:grid;gap:0;max-height:680px;overflow:auto;}
+.map-destination-row{display:grid;gap:4px;width:100%;padding:14px 16px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);text-align:left;cursor:pointer;transition:background 0.18s,border-color 0.18s;}
+.map-destination-row:hover,.map-destination-row.active{background:rgba(61,217,197,0.08);}
+.map-destination-row.active{box-shadow:inset 4px 0 0 var(--accent);}
+.map-destination-row span{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;}
+.map-destination-row strong{font-size:15px;line-height:1.2;}
+.map-destination-row small{font-size:11px;line-height:1.45;color:var(--muted);}
+.maps-detail-panel{min-width:0;}
+.map-detail-card{position:relative;overflow:hidden;padding:22px;border-radius:26px;border:1px solid var(--border);background:radial-gradient(circle at 92% 6%, rgba(61,217,197,0.16), transparent 32%),linear-gradient(180deg,var(--surface2),rgba(255,255,255,0.02));box-shadow:var(--shadow);}
+.map-detail-card::before{content:'';position:absolute;inset:0 0 auto 0;height:5px;background:linear-gradient(90deg, rgba(61,217,197,0.85), rgba(255,209,102,0.35));}
+.map-detail-card.verified{border-color:var(--green-border);}
+.map-detail-card.unverified{border-color:rgba(255,209,102,0.26);}
+.map-detail-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;}
+.map-empty-detail{padding:40px 20px;border-radius:24px;border:1px dashed var(--border2);color:var(--muted);text-align:center;background:rgba(255,255,255,0.02);}
 .maps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
 .map-card{position:relative;overflow:hidden;padding:18px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),rgba(255,255,255,0.02));box-shadow:var(--shadow);}
 .map-card::before{content:'';position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg, rgba(61,217,197,0.75), rgba(255,209,102,0.22));opacity:0.7;}
@@ -444,6 +471,7 @@
   [data-theme="light"] .admin-role-card,
   [data-theme="light"] .admin-ban-card,
   [data-theme="light"] .skilling-card,
+  [data-theme="light"] .map-detail-card,
   [data-theme="light"] .map-card,
   [data-theme="light"] .account-card,
   [data-theme="light"] .marketplace-card,
@@ -501,7 +529,8 @@
     .skilling-control-card{flex-direction:column;align-items:stretch;}
     .skilling-controls{grid-template-columns:1fr;min-width:0;}
     .maps-control-card{flex-direction:column;align-items:stretch;}
-    .maps-controls,.map-detail-grid{grid-template-columns:1fr;min-width:0;}
+    .maps-controls,.maps-shell,.map-detail-grid{grid-template-columns:1fr;min-width:0;}
+    .maps-rail,.maps-list-card{position:static;max-height:none;}
     .admin-hero,
     .admin-section-title{flex-direction:column;align-items:stretch;}
     .admin-kpi-grid,
