@@ -63,6 +63,8 @@ $ok = impact_registry_merge(function (&$users) use ($email, $displayName, $event
             'signup_at' => $now,
             'email_verified_at' => null,
             'last_signin_at' => null,
+            'is_moderator' => false,
+            'is_admin' => false,
         ];
         if ($createdClient !== '') {
             $row['client_created_at'] = $createdClient;
@@ -103,4 +105,23 @@ if (!$ok) {
     lemon_json_exit(500, ['error' => 'Could not update registry.']);
 }
 
-lemon_json_exit(200, ['ok' => true]);
+$storedUser = null;
+foreach (impact_registry_load_users() as $row) {
+    if (!is_array($row)) {
+        continue;
+    }
+    if (strtolower((string)($row['email'] ?? '')) === $email) {
+        $storedUser = $row;
+        break;
+    }
+}
+
+lemon_json_exit(200, [
+    'ok' => true,
+    'user' => [
+        'email' => $email,
+        'display_name' => (string)($storedUser['display_name'] ?? $displayName),
+        'is_moderator' => !empty($storedUser['is_moderator']),
+        'is_admin' => !empty($storedUser['is_admin']),
+    ],
+]);

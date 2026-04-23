@@ -942,7 +942,7 @@ async function notifySiteUserRegistry(event) {
   const email = currentUser?.email;
   if (!email) return;
   try {
-    await fetch(`${base}/site-user-register`, {
+    const res = await fetch(`${base}/site-user-register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -952,9 +952,28 @@ async function notifySiteUserRegistry(event) {
         created_at: currentUser.created_at || ''
       })
     });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.user) {
+      applyServerRegistryRole(data.user);
+    }
   } catch (e) {
     console.warn('notifySiteUserRegistry', e);
   }
+}
+
+function applyServerRegistryRole(serverUser) {
+  if (!currentUser || !serverUser) return false;
+  const email = String(serverUser.email || '').trim().toLowerCase();
+  if (!email || email !== String(currentUser.email || '').trim().toLowerCase()) return false;
+  const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
+  const serverIsMod = Boolean(serverUser.is_moderator);
+  const nextIsMod = owner && email === owner ? false : serverIsMod;
+  if (Boolean(currentUser.is_moderator) === nextIsMod) return false;
+  currentUser = { ...currentUser, is_moderator: nextIsMod };
+  saveCurrentUserRecord(currentUser);
+  persistAuthSession();
+  updateAuthUI();
+  return true;
 }
 
 function getAdminRegistryApiKey() {
@@ -1397,6 +1416,7 @@ function saveState(){
 
 const ONLINE_TIMEOUT_MS = 15 * 60 * 1000;
 let authUsersCache = null;
+let adminServerRegistryUsers = [];
 
 function normalizeAuthUserRecord(user) {
   return {
@@ -2062,8 +2082,11 @@ async function renderAdminSiteRegistry() {
   const key = getAdminRegistryApiKey();
   if (!key) {
     tableEl.innerHTML =
-      '<div class="empty">Set IMPACT_ADMIN_API_KEY in api/stripe-secrets.php on the server, then paste it above and click Save in this browser.</div>';
+      '<div class="empty">Set IMPACT_ADMIN_API_KEY in GitHub Actions secrets, then paste it above and click Save in this browser.</div>';
     setAdminRegistryStatus('');
+    adminServerRegistryUsers = [];
+    populateAdminRoleSuggestions();
+    renderAdminOverview();
     return;
   }
   setAdminRegistryStatus('Loading…', 'muted');
@@ -2079,7 +2102,11 @@ async function renderAdminSiteRegistry() {
       return;
     }
     const users = Array.isArray(data.users) ? data.users : [];
+    adminServerRegistryUsers = users;
     setAdminRegistryStatus(`${users.length} user${users.length === 1 ? '' : 's'} in server registry.`, 'success');
+    populateAdminRoleSuggestions();
+    renderAdminOverview();
+    renderAdminRoleTarget();
     if (!users.length) {
       tableEl.innerHTML = '<div class="empty">No signups recorded yet. New accounts appear after signup (and update on verify / sign-in).</div>';
       return;
@@ -2088,7 +2115,7 @@ async function renderAdminSiteRegistry() {
     tableEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
 <thead><tr style="text-align:left;border-bottom:1px solid var(--border);">
 <th style="padding:8px 6px;">Email</th><th style="padding:8px 6px;">Display</th><th style="padding:8px 6px;">Signed up</th>
-<th style="padding:8px 6px;">Verified</th><th style="padding:8px 6px;">Last sign-in</th></tr></thead><tbody>
+<th style="padding:8px 6px;">Verified</th><th style="padding:8px 6px;">Last sign-in</th><th style="padding:8px 6px;">Role</th><th style="padding:8px 6px;">Actions</th></tr></thead><tbody>
 ${users
   .map(
     u => `<tr style="border-bottom:1px solid var(--border);">
@@ -2097,6 +2124,10 @@ ${users
 <td style="padding:8px 6px;white-space:nowrap;">${fmt(u.signup_at || u.client_created_at)}</td>
 <td style="padding:8px 6px;white-space:nowrap;">${fmt(u.email_verified_at)}</td>
 <td style="padding:8px 6px;white-space:nowrap;">${fmt(u.last_signin_at)}</td>
+<td style="padding:8px 6px;">${getAdminRolePill(u)}</td>
+<td style="padding:8px 6px;white-space:nowrap;">
+${u.is_admin ? '<span style="color:var(--muted);">Owner</span>' : u.is_moderator ? `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', false)">Remove Mod</button>` : `<button class="btn-sm" onclick="adminSetServerModerator('${escapeHtml(u.email)}', true)">Give Mod</button>`}
+</td>
 </tr>`
   )
   .join('')}
@@ -2105,6 +2136,180 @@ ${users
     setAdminRegistryStatus(e.message || 'Network error.', 'error');
     tableEl.innerHTML = '<div class="empty">Request failed.</div>';
   }
+}
+
+function getAdminRolePill(user) {
+  if (user?.is_admin) return '<span class="role-pill admin">Admin</span>';
+  if (user?.is_moderator) return '<span class="role-pill mod">Mod</span>';
+  return '<span class="role-pill">User</span>';
+}
+
+function renderAdminOverview() {
+  if (!isAdminUser()) return;
+  const localUsers = loadAuthUsers();
+  const registryUsers = Array.isArray(adminServerRegistryUsers) ? adminServerRegistryUsers : [];
+  const userCount = Math.max(localUsers.length, registryUsers.length);
+  const modEmails = new Set();
+  localUsers.filter(u => u.is_moderator).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
+  registryUsers.filter(u => u.is_moderator).forEach(u => modEmails.add(String(u.email || '').toLowerCase()));
+  const openTickets = (state?.tickets || []).filter(t => String(t.status || 'open') !== 'closed').length;
+  const pendingListings = (state?.marketplace_listings || []).filter(l => String(l.status || '') === 'pending').length;
+  const values = {
+    'admin-total-users': userCount,
+    'admin-mod-count': modEmails.size,
+    'admin-open-tickets': openTickets,
+    'admin-pending-count': pendingListings
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  });
+}
+
+function getAdminKnownUsers() {
+  const map = new Map();
+  [...loadAuthUsers(), ...(adminServerRegistryUsers || [])].forEach(user => {
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (!email) return;
+    map.set(email, { ...(map.get(email) || {}), ...user, email });
+  });
+  return Array.from(map.values()).sort((a, b) => String(a.email || '').localeCompare(String(b.email || '')));
+}
+
+function populateAdminRoleSuggestions() {
+  const el = document.getElementById('admin-role-suggestions');
+  if (!el) return;
+  el.innerHTML = getAdminKnownUsers()
+    .map(user => `<option value="${escapeHtml(user.email)}">${escapeHtml(user.display_name || user.email)}</option>`)
+    .join('');
+}
+
+function getAdminRoleTargetEmail() {
+  return String(document.getElementById('admin-role-search')?.value || '').trim().toLowerCase();
+}
+
+function renderAdminRoleTarget() {
+  const el = document.getElementById('admin-role-target-card');
+  if (!el) return;
+  const email = getAdminRoleTargetEmail();
+  if (!email) {
+    el.innerHTML = 'Search an email to preview the target user.';
+    return;
+  }
+  const user = getAdminKnownUsers().find(u => String(u.email || '').toLowerCase() === email);
+  const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
+  if (!user) {
+    el.innerHTML = `<strong>${escapeHtml(email)}</strong><br><span style="color:var(--muted);">No registry row yet. Granting mod will create a server registry row for this email.</span>`;
+    return;
+  }
+  const isOwner = owner && email === owner;
+  el.innerHTML = `
+    <strong>${escapeHtml(user.display_name || user.email)}</strong> ${getAdminRolePill({ ...user, is_admin: isOwner || user.is_admin })}
+    <br><span style="color:var(--muted);">${escapeHtml(user.email)}</span>
+    ${user.moderator_updated_at ? `<br><span style="color:var(--hint);">Role updated ${escapeHtml(user.moderator_updated_at)}</span>` : ''}
+  `;
+}
+
+function setAdminRoleResult(message = '', tone = 'muted') {
+  const el = document.getElementById('admin-role-result');
+  if (!el) return;
+  if (!message) {
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.textContent = message;
+  el.style.color = tone === 'error' ? 'var(--red)' : tone === 'success' ? 'var(--green)' : 'var(--muted)';
+}
+
+async function adminSetServerModerator(targetEmail, wantModerator) {
+  if (!isAdminUser() || !currentUser) return { ok: false, error: 'Only the site owner can change moderator status.' };
+  const email = String(targetEmail || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return { ok: false, error: 'Enter a valid email.' };
+  const owner = String(OWNER_ADMIN_EMAIL || '').trim().toLowerCase();
+  if (owner && email === owner) return { ok: false, error: 'The owner account already has full access.' };
+  if (email === String(currentUser.email || '').trim().toLowerCase()) return { ok: false, error: 'You cannot change your own moderator status here.' };
+  if (wantModerator && isEmailBanned(email)) return { ok: false, error: 'Unban this email before making them a moderator.' };
+
+  const base = getBillingFunctionsBase();
+  const key = getAdminRegistryApiKey();
+  const knownUser = getAdminKnownUsers().find(u => String(u.email || '').toLowerCase() === email);
+  if (!base || !key) {
+    const local = adminSetUserModerator(email, wantModerator);
+    if (local.ok) {
+      renderAdminOverview();
+      populateAdminRoleSuggestions();
+    }
+    return local.ok ? { ok: true, warning: 'Updated this browser only. Save the admin key to update the server registry.' } : local;
+  }
+
+  try {
+    const res = await fetch(`${base}/admin-site-users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Impact-Admin-Key': key
+      },
+      body: JSON.stringify({
+        action: 'set_moderator',
+        email,
+        display_name: knownUser?.display_name || email,
+        is_moderator: Boolean(wantModerator),
+        updated_by: currentUser.email || 'admin'
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || `Could not update role (${res.status}).` };
+    adminServerRegistryUsers = Array.isArray(data.users) ? data.users : [];
+    const localUsers = loadAuthUsers();
+    const idx = localUsers.findIndex(u => String(u.email || '').toLowerCase() === email);
+    if (idx !== -1 && !localUsers[idx].is_admin) {
+      localUsers[idx] = { ...localUsers[idx], is_moderator: Boolean(wantModerator) };
+      saveAuthUsers(localUsers);
+    }
+    setAdminRegistryStatus(`Updated ${email}: ${wantModerator ? 'moderator' : 'regular user'}.`, 'success');
+    renderAdminSiteRegistry();
+    renderAdminUserList();
+    renderAdminOverview();
+    populateAdminRoleSuggestions();
+    renderAdminRoleTarget();
+    updateAuthUI();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message || 'Network error.' };
+  }
+}
+
+async function adminRoleGrantMod() {
+  setAdminRoleResult('Updating role...', 'muted');
+  const r = await adminSetServerModerator(getAdminRoleTargetEmail(), true);
+  setAdminRoleResult(r.ok ? (r.warning || 'Moderator access granted.') : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+}
+
+async function adminRoleRevokeMod() {
+  setAdminRoleResult('Updating role...', 'muted');
+  const r = await adminSetServerModerator(getAdminRoleTargetEmail(), false);
+  setAdminRoleResult(r.ok ? (r.warning || 'Moderator access removed.') : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+}
+
+async function refreshAdminDashboard() {
+  if (!isAdminUser()) return;
+  await syncCommunityStateFromServer();
+  renderAdminUserList();
+  renderAdminFlipsStats();
+  renderAdminPrices();
+  renderAdminMarketplace();
+  renderAdminAllMembers();
+  renderAdminActivity();
+  renderAdminBannedList();
+  loadAdminTickets();
+  renderAdminPendingListings();
+  renderAdminPaymentHints();
+  await renderAdminSiteRegistry();
+  renderAdminOverview();
+  populateAdminRoleSuggestions();
+  renderAdminRoleTarget();
 }
 
 function renderAdminPaymentHints() {
@@ -2130,6 +2335,9 @@ function renderAdminUserList() {
   if (!container) return;
 
   const users = loadAuthUsers();
+  renderAdminOverview();
+  populateAdminRoleSuggestions();
+  renderAdminRoleTarget();
   if (!users.length) {
     container.innerHTML = '<div class="empty">No users in local storage.</div>';
     return;
@@ -2682,38 +2890,22 @@ function adminLookupProfile() {
   `;
 }
 
-function adminGiveMod(email) {
-  if (!isAdminUser()) return;
-  const users = loadAuthUsers();
-  const user = users.find(u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase());
-  if (!user) return;
-  user.is_moderator = true;
-  saveAuthUsers(users);
-  if (currentUser?.email === email) {
-    currentUser = user;
-    persistAuthSession();
-  }
-  updateAuthUI();
+async function adminGiveMod(email) {
+  const r = await adminSetServerModerator(email, true);
+  setAdminRoleResult(r.ok ? (r.warning || `${email} is now a moderator.`) : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+  const roleSearch = document.getElementById('admin-role-search');
+  if (roleSearch) roleSearch.value = String(email || '').trim().toLowerCase();
+  renderAdminRoleTarget();
   adminLookupProfile();
-  renderAdminUserList();
-  alert(`${email} is now a moderator.`);
 }
 
-function adminRemoveMod(email) {
-  if (!isAdminUser()) return;
-  const users = loadAuthUsers();
-  const user = users.find(u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase());
-  if (!user) return;
-  user.is_moderator = false;
-  saveAuthUsers(users);
-  if (currentUser?.email === email) {
-    currentUser = user;
-    persistAuthSession();
-  }
-  updateAuthUI();
+async function adminRemoveMod(email) {
+  const r = await adminSetServerModerator(email, false);
+  setAdminRoleResult(r.ok ? (r.warning || `${email} is no longer a moderator.`) : `Error: ${r.error}`, r.ok ? 'success' : 'error');
+  const roleSearch = document.getElementById('admin-role-search');
+  if (roleSearch) roleSearch.value = String(email || '').trim().toLowerCase();
+  renderAdminRoleTarget();
   adminLookupProfile();
-  renderAdminUserList();
-  alert(`${email} is no longer a moderator.`);
 }
 
 function renderAdminAllMembers() {
@@ -3945,6 +4137,9 @@ function updateAuthUI() {
   if (document.getElementById('panel-admin')?.classList.contains('active')) {
     void renderAdminSiteRegistry();
     renderAdminPaymentHints();
+    renderAdminOverview();
+    populateAdminRoleSuggestions();
+    renderAdminRoleTarget();
   }
 }
 
@@ -5672,6 +5867,9 @@ async function switchTab(tab){
     renderAdminBannedList();
     loadAdminTickets();
     renderAdminPendingListings();
+    renderAdminOverview();
+    populateAdminRoleSuggestions();
+    renderAdminRoleTarget();
   }
   renderPanel(tab);
   trackUserActivity();
@@ -7996,6 +8194,9 @@ function renderPanel(tab){
   if (tab === 'admin') {
     void renderAdminSiteRegistry();
     renderAdminPaymentHints();
+    renderAdminOverview();
+    populateAdminRoleSuggestions();
+    renderAdminRoleTarget();
   }
   if(tab==='fp' || tab==='strategy' || tab==='slayer' || tab==='transfers') {
     populateSlayerTaskSelect();
@@ -8154,6 +8355,9 @@ document.getElementById('fp-result')?.addEventListener('change', refreshFpStakeP
   loadAuthSession();
   loadState();
   await syncCommunityStateFromServer();
+  if (currentUser?.email) {
+    void notifySiteUserRegistry('signin');
+  }
   await handleBillingQueryParams();
   await recoverPaidPlanForSignedInUser();
   await syncPaidSubscriptionIfNeeded();

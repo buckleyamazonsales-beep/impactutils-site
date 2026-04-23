@@ -1179,138 +1179,199 @@
 
     <div id="panel-admin" class="panel">
       <div class="page-header">
-        <div class="page-title">🔒 Admin Panel</div>
-        <div class="page-subtitle">Full control — user management, all user data, billing, marketplace, and site settings.</div>
+        <div class="page-title">🔒 Admin Command Center</div>
+        <div class="page-subtitle">Organized control for people, roles, community operations, billing, safety, and server health.</div>
       </div>
 
-      <div class="card">
-        <div class="card-title">👥 User Management</div>
-        <div id="admin-user-list" style="margin-bottom:16px;"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="renderAdminUserList()">Refresh Users</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">💰 All User Purchases (Stripe)</div>
-        <div class="profit-preview" style="margin-bottom:12px;">
-          View all users who purchased Pro/Founder. Syncs from Stripe.
-        </div>
-        <div class="btn-row" style="margin-bottom:12px;">
-          <button class="btn primary" onclick="loadAdminPurchases()">Load Purchases</button>
-        </div>
-        <div id="admin-purchases-list" class="profit-preview" style="margin-top:12px;">Click "Load Purchases" to see all paid users.</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📊 All User Flips (Local Data)</div>
-        <div id="admin-flips-stats" style="margin-bottom:12px;"></div>
-        <div class="btn-row">
-          <button class="btn" onclick="exportAllUserFlips()">Export All Flips CSV</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">💎 All User Community Prices</div>
-        <div class="profit-preview" style="margin-bottom:12px;">
-          See every price submission from all users with their trust scores.
-        </div>
-        <div id="admin-prices-list" style="max-height:400px;overflow-y:auto;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🛒 All Marketplace Listings</div>
-        <div id="admin-marketplace-list" style="max-height:400px;overflow-y:auto;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">👤 User Lookup</div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label">Email or display name</label>
-            <input type="text" id="admin-profile-search" placeholder="player@email.com or DisplayName" onkeydown="if(event.key==='Enter')adminLookupProfile()">
+      <div class="admin-command-center">
+        <div class="admin-hero card">
+          <div>
+            <div class="admin-eyebrow">Owner Workspace</div>
+            <div class="admin-hero-title">Run the site from one clean desk.</div>
+            <div class="admin-hero-copy">Grant staff, approve marketplace posts, review tickets, check Stripe, export data, and audit activity without digging through one long page.</div>
           </div>
-          <div class="form-group" style="display:flex;align-items:flex-end;">
-            <button type="button" class="btn primary" onclick="adminLookupProfile()" style="width:100%;">Search</button>
+          <div class="admin-hero-actions">
+            <button class="btn primary" onclick="refreshAdminDashboard()">Refresh Admin</button>
+            <button class="btn" onclick="checkAdminStripeStatus()">Verify Stripe</button>
           </div>
         </div>
-        <div id="admin-profile-result" style="margin-top:16px;"></div>
-      </div>
 
-      <div class="card">
-        <div class="card-title">👥 All Members</div>
-        <div class="btn-row" style="margin-bottom:12px;">
-          <button type="button" class="btn primary" onclick="renderAdminAllMembers()">Refresh Members</button>
-        </div>
-        <div id="admin-all-members-list" style="max-height:500px;overflow-y:auto;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📋 All User Activity</div>
-        <div class="form-group">
-          <label class="form-label">Filter by user email</label>
-          <input type="text" id="admin-activity-filter" placeholder="Leave empty to see all activity" oninput="renderAdminActivity()">
-        </div>
-        <div id="admin-activity-list" style="max-height:500px;overflow-y:auto;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">⛔ Ban Management</div>
-        <div class="form-group">
-          <label class="form-label">Ban email</label>
-          <input type="text" id="admin-ban-email" placeholder="email@example.com">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Reason</label>
-          <input type="text" id="admin-ban-reason" placeholder="Reason for ban">
-        </div>
-        <div class="btn-row">
-          <button class="btn primary" onclick="adminBanUser()">Ban User</button>
-          <button class="btn" onclick="adminUnbanUser()">Unban User</button>
-        </div>
-        <div id="admin-ban-result" style="margin-top:12px;"></div>
-        <div id="admin-banned-list" style="margin-top:12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🎫 Deposit Tickets</div>
-        <div class="profit-preview" style="margin-bottom:12px;">
-          Live chat with users who want to make a marketplace listing. Verify their GP deposit, then approve their post.
-        </div>
-        <div id="admin-ticket-list" style="margin-bottom:16px;"></div>
-        <div class="btn-row" style="margin-bottom:12px;">
-          <button type="button" class="btn primary" onclick="loadAdminTickets()">Refresh Tickets</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">✅ All Pending Marketplace Listings</div>
-        <div id="admin-pending-listings"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">⚙️ Stripe Configuration</div>
-        <div id="admin-lemon-webhook-display" class="profit-preview" style="margin-top:0;"></div>
-        <div class="btn-row" style="margin-top:12px;">
-          <button type="button" class="btn primary" onclick="checkAdminStripeStatus()">Verify Stripe Config</button>
-        </div>
-        <div id="admin-lemon-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🔑 Registry API Key</div>
-        <div class="form-grid" style="margin-bottom:14px;">
-          <div class="form-group" style="grid-column:1/-1;">
-            <label class="form-label">Admin API key (matches IMPACT_ADMIN_API_KEY in stripe-secrets.php)</label>
-            <input type="password" id="admin-registry-key" placeholder="Paste key, then Save" autocomplete="off">
+        <div class="admin-kpi-grid">
+          <div class="admin-kpi">
+            <span>Registered Users</span>
+            <strong id="admin-total-users">0</strong>
+          </div>
+          <div class="admin-kpi">
+            <span>Moderators</span>
+            <strong id="admin-mod-count">0</strong>
+          </div>
+          <div class="admin-kpi">
+            <span>Open Tickets</span>
+            <strong id="admin-open-tickets">0</strong>
+          </div>
+          <div class="admin-kpi">
+            <span>Pending Listings</span>
+            <strong id="admin-pending-count">0</strong>
           </div>
         </div>
-        <div class="btn-row">
-          <button type="button" class="btn primary" onclick="saveAdminRegistryKey()">Save Key</button>
-          <button type="button" class="btn" onclick="refreshAdminRegistry()">Refresh Server Users</button>
+
+        <div class="admin-section-grid">
+          <section class="card admin-section-card wide">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">👥 People & Roles</div>
+                <p>Manage local users and server-backed staff roles. Moderator grants sync by email when that user signs in.</p>
+              </div>
+              <button class="btn" onclick="renderAdminUserList()">Refresh Users</button>
+            </div>
+
+            <div class="admin-role-card">
+              <div>
+                <div class="admin-mini-title">Role Manager</div>
+                <div class="admin-card-copy">Type any registered email, then grant or remove moderator. This uses the server registry when your admin key is saved.</div>
+              </div>
+              <div class="admin-role-tools">
+                <input type="text" id="admin-role-search" list="admin-role-suggestions" placeholder="email@example.com" oninput="renderAdminRoleTarget()" onkeydown="if(event.key==='Enter')adminRoleGrantMod()">
+                <datalist id="admin-role-suggestions"></datalist>
+                <div class="btn-row">
+                  <button class="btn primary" onclick="adminRoleGrantMod()">Give Mod</button>
+                  <button class="btn" onclick="adminRoleRevokeMod()">Remove Mod</button>
+                </div>
+              </div>
+              <div id="admin-role-target-card" class="admin-role-result">Search an email to preview the target user.</div>
+              <div id="admin-role-result" class="admin-role-result muted"></div>
+            </div>
+
+            <div id="admin-user-list" class="admin-scroll-box"></div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">🔑 Server Registry</div>
+            <div class="admin-card-copy">Save the admin key once per browser session to load server users and change roles globally.</div>
+            <div class="form-grid" style="margin-bottom:14px;">
+              <div class="form-group" style="grid-column:1/-1;">
+                <label class="form-label">Admin API key</label>
+                <input type="password" id="admin-registry-key" placeholder="Paste key, then Save" autocomplete="off">
+              </div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn primary" onclick="saveAdminRegistryKey()">Save Key</button>
+              <button type="button" class="btn" onclick="refreshAdminRegistry()">Refresh Server Users</button>
+            </div>
+            <div id="admin-registry-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
+            <div id="admin-registry-table" class="profit-preview admin-scroll-box compact" style="margin-top:12px;"></div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">👤 User Deep Dive</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Email or display name</label>
+                <input type="text" id="admin-profile-search" placeholder="player@email.com or DisplayName" onkeydown="if(event.key==='Enter')adminLookupProfile()">
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end;">
+                <button type="button" class="btn primary" onclick="adminLookupProfile()" style="width:100%;">Search</button>
+              </div>
+            </div>
+            <div id="admin-profile-result" style="margin-top:16px;"></div>
+          </section>
+
+          <section class="card admin-section-card wide">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">🎫 Community Operations</div>
+                <p>Handle listing deposit tickets, pending username ads, active marketplace rows, and community price submissions.</p>
+              </div>
+              <button type="button" class="btn primary" onclick="loadAdminTickets()">Refresh Tickets</button>
+            </div>
+            <div class="admin-two-column">
+              <div>
+                <div class="admin-mini-title">Deposit Tickets</div>
+                <div id="admin-ticket-list" class="admin-scroll-box"></div>
+              </div>
+              <div>
+                <div class="admin-mini-title">Pending Marketplace Listings</div>
+                <div id="admin-pending-listings" class="admin-scroll-box"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">🛒 Marketplace Listings</div>
+            <div id="admin-marketplace-list" class="admin-scroll-box"></div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">💎 Price Submissions</div>
+            <div class="admin-card-copy">See every price submission from users with trust signals.</div>
+            <div id="admin-prices-list" class="admin-scroll-box"></div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">💰 Stripe Purchases</div>
+            <div class="admin-card-copy">View paid Pro/Founder records synced from Stripe.</div>
+            <div class="btn-row" style="margin-bottom:12px;">
+              <button class="btn primary" onclick="loadAdminPurchases()">Load Purchases</button>
+            </div>
+            <div id="admin-purchases-list" class="profit-preview">Click "Load Purchases" to see all paid users.</div>
+          </section>
+
+          <section class="card admin-section-card">
+            <div class="card-title">⚙️ Stripe Configuration</div>
+            <div id="admin-lemon-webhook-display" class="profit-preview" style="margin-top:0;"></div>
+            <div class="btn-row" style="margin-top:12px;">
+              <button type="button" class="btn primary" onclick="checkAdminStripeStatus()">Verify Stripe Config</button>
+            </div>
+            <div id="admin-lemon-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
+          </section>
+
+          <section class="card admin-section-card wide">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">📊 Data, Safety & Audits</div>
+                <p>Review all member activity, export flip logs, and manage bans from one section.</p>
+              </div>
+              <button class="btn" onclick="exportAllUserFlips()">Export All Flips CSV</button>
+            </div>
+            <div id="admin-flips-stats" style="margin-bottom:16px;"></div>
+            <div class="admin-two-column">
+              <div>
+                <div class="admin-mini-title">All Members</div>
+                <div class="btn-row" style="margin-bottom:12px;">
+                  <button type="button" class="btn primary" onclick="renderAdminAllMembers()">Refresh Members</button>
+                </div>
+                <div id="admin-all-members-list" class="admin-scroll-box"></div>
+              </div>
+              <div>
+                <div class="admin-mini-title">Activity Feed</div>
+                <div class="form-group">
+                  <label class="form-label">Filter by user email</label>
+                  <input type="text" id="admin-activity-filter" placeholder="Leave empty to see all activity" oninput="renderAdminActivity()">
+                </div>
+                <div id="admin-activity-list" class="admin-scroll-box"></div>
+              </div>
+            </div>
+            <div class="admin-ban-card">
+              <div class="admin-mini-title">Ban Management</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Ban email</label>
+                  <input type="text" id="admin-ban-email" placeholder="email@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Reason</label>
+                  <input type="text" id="admin-ban-reason" placeholder="Reason for ban">
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="btn primary" onclick="adminBanUser()">Ban User</button>
+                <button class="btn" onclick="adminUnbanUser()">Unban User</button>
+              </div>
+              <div id="admin-ban-result" style="margin-top:12px;"></div>
+              <div id="admin-banned-list" style="margin-top:12px;"></div>
+            </div>
+          </section>
         </div>
-        <div id="admin-registry-status" class="profit-preview" style="display:none;margin-top:12px;"></div>
-        <div id="admin-registry-table" class="profit-preview" style="margin-top:12px;"></div>
       </div>
     </div>
 
