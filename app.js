@@ -2535,6 +2535,66 @@ const DUNGEON_MAP_IMAGES = {
   'Slayer Cave': 'https://oldschool.runescape.wiki/images/Wilderness_Slayer_Cave_map.png'
 };
 
+const DUNGEON_MAP_ANNOTATIONS = {
+  'Asgarnian Ice Dungeon': [
+    { left: 16, top: 24, label: 'Pirates / Muggers' },
+    { left: 56, top: 26, label: 'Ice warriors' },
+    { left: 70, top: 46, label: 'Ice giants' },
+    { left: 76, top: 72, label: 'Skeletal wyverns' },
+    { left: 20, top: 68, label: 'Royal Titans' }
+  ],
+  'Brimhaven Dungeon': [
+    { left: 17, top: 26, label: 'Red dragons' },
+    { left: 38, top: 21, label: 'Black demons' },
+    { left: 61, top: 26, label: 'Greater demons' },
+    { left: 71, top: 55, label: 'Metal dragons' },
+    { left: 32, top: 63, label: 'Hellhounds / Dogs' }
+  ],
+  'Catacombs': [
+    { left: 24, top: 25, label: 'Dagannoth / Dust devils' },
+    { left: 65, top: 20, label: 'Black / Greater demons' },
+    { left: 23, top: 64, label: 'Banshees / Spectres' },
+    { left: 53, top: 58, label: 'Brutal dragons / Hellhounds' },
+    { left: 72, top: 74, label: 'Skotizo' }
+  ],
+  'Godwars': [
+    { left: 20, top: 20, label: 'Armadyl' },
+    { left: 74, top: 22, label: 'Bandos' },
+    { left: 21, top: 73, label: 'Saradomin' },
+    { left: 75, top: 73, label: 'Zamorak' },
+    { left: 47, top: 48, label: 'Main chamber' }
+  ],
+  'Iorwerth Dungeon': [
+    { left: 20, top: 28, label: 'Moss giants' },
+    { left: 45, top: 25, label: 'Kurasks' },
+    { left: 72, top: 24, label: 'Iorwerth warriors' },
+    { left: 39, top: 61, label: 'Mutated bloodvelds' },
+    { left: 67, top: 63, label: 'Dark beasts / Nechryaels' }
+  ],
+  "Jormungand's Prison": [
+    { left: 23, top: 28, label: 'Dagannoth' },
+    { left: 55, top: 30, label: 'Basilisks' },
+    { left: 73, top: 61, label: 'Basilisk knights' }
+  ],
+  'Taverley Dungeon': [
+    { left: 20, top: 22, label: 'Bats / Wolves' },
+    { left: 49, top: 29, label: 'Black knights / Chaos druids' },
+    { left: 73, top: 28, label: 'Blue dragons' },
+    { left: 41, top: 60, label: 'Black demons / Hellhounds' },
+    { left: 77, top: 66, label: 'Cerberus' }
+  ],
+  "Zemouregal's Base": [
+    { left: 24, top: 24, label: 'Armoured zombies' },
+    { left: 52, top: 47, label: 'Undead corridors' },
+    { left: 74, top: 28, label: "Zemouregal's forces" }
+  ],
+  'Slayer Cave': [
+    { left: 19, top: 23, label: 'Entrance / low mobs' },
+    { left: 42, top: 48, label: 'Wilderness spawns' },
+    { left: 73, top: 32, label: 'Deep cave monsters' }
+  ]
+};
+
 function normalizeMapName(name) {
   return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
@@ -2598,6 +2658,13 @@ function getDungeonMapImage(row, monsters = []) {
     </svg>
   `;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getDungeonMapAnnotations(row) {
+  if (!row) return [];
+  const target = normalizeMapName(row.name);
+  const key = Object.keys(DUNGEON_MAP_ANNOTATIONS).find(name => normalizeMapName(name) === target);
+  return key ? DUNGEON_MAP_ANNOTATIONS[key] : [];
 }
 
 function selectMapDestinationByName(name) {
@@ -2669,11 +2736,15 @@ function renderMaps() {
   const dungeonMonsters = selected ? getDungeonMonsterLinks(selected.name) : [];
   const monsterDungeons = selected?.category !== 'Dungeons' ? getDungeonLinksForMonster(selected.name) : [];
   const dungeonMapSrc = selected ? getDungeonMapImage(selected, dungeonMonsters) : '';
+  const dungeonAnnotations = selected ? getDungeonMapAnnotations(selected) : [];
   const dungeonMapFromWiki = selected ? Object.keys(DUNGEON_MAP_IMAGES).some(name => normalizeMapName(name) === normalizeMapName(selected.name)) : false;
   const dungeonMapMarkup = dungeonMapSrc ? `
     <div class="map-image-panel">
       <div class="maps-mini-heading">${dungeonMapFromWiki ? 'OSRS Wiki Dungeon Map' : 'Dungeon Map'}</div>
-      <img class="dungeon-map-image" src="${dungeonMapSrc}" alt="${escapeHtml(selected.name)} dungeon map">
+      <div class="dungeon-map-stage">
+        <img class="dungeon-map-image" src="${dungeonMapSrc}" alt="${escapeHtml(selected.name)} dungeon map">
+        ${dungeonAnnotations.map(note => `<div class="dungeon-map-label" style="left:${note.left}%;top:${note.top}%;">${escapeHtml(note.label)}</div>`).join('')}
+      </div>
     </div>
   ` : '';
   const dungeonMarkup = dungeonMonsters.length ? `
