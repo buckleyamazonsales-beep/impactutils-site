@@ -33,6 +33,41 @@ jobs:
           }
           EOF
 
+      - name: Build server secrets
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRICE_PRO: ${{ secrets.STRIPE_PRICE_PRO }}
+          STRIPE_PRICE_FOUNDER: ${{ secrets.STRIPE_PRICE_FOUNDER }}
+          IMPACT_PUBLIC_SITE_URL: ${{ secrets.IMPACT_PUBLIC_SITE_URL }}
+          IMPACT_ADMIN_API_KEY: ${{ secrets.IMPACT_ADMIN_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+
+          def php_string(value):
+              return "'" + str(value or "").replace("\\", "\\\\").replace("'", "\\'") + "'"
+
+          values = {
+              "STRIPE_SECRET_KEY": os.environ.get("STRIPE_SECRET_KEY", ""),
+              "STRIPE_WEBHOOK_SECRET": os.environ.get("STRIPE_WEBHOOK_SECRET", ""),
+              "STRIPE_PRICE_PRO": os.environ.get("STRIPE_PRICE_PRO", ""),
+              "STRIPE_PRICE_FOUNDER": os.environ.get("STRIPE_PRICE_FOUNDER", ""),
+              "IMPACT_PUBLIC_SITE_URL": os.environ.get("IMPACT_PUBLIC_SITE_URL", "https://impactutils.com"),
+              "IMPACT_ADMIN_API_KEY": os.environ.get("IMPACT_ADMIN_API_KEY", ""),
+          }
+
+          missing = [key for key, value in values.items() if not value]
+          if missing:
+              raise SystemExit("Missing required GitHub Actions secrets: " + ", ".join(missing))
+
+          with open("api/stripe-secrets.php", "w", encoding="utf-8") as fh:
+              fh.write("<?php\nreturn [\n")
+              for key, value in values.items():
+                  fh.write(f"    '{key}' => {php_string(value)},\n")
+              fh.write("];\n")
+          PY
+
       - name: Deploy via SFTP with lftp
         env:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
