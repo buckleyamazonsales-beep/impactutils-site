@@ -808,9 +808,17 @@ function applyCommunityStatePayload(data = {}) {
   if (data.user_sessions && typeof data.user_sessions === 'object') {
     state.user_sessions = data.user_sessions;
   }
+  if (Array.isArray(data.audit_log)) {
+    state.audit_log = data.audit_log;
+  }
+  if (Array.isArray(data.leaderboard)) {
+    state.leaderboard = data.leaderboard;
+  }
   normalizeState();
   saveState();
   updateOnlineIndicator();
+  renderLeaderboard();
+  renderAdminLiveDashboard();
 }
 
 async function syncCommunityStateFromServer() {
@@ -862,7 +870,9 @@ function getCommunitySnapshot() {
       const messages = ticket.messages || [];
       const lastMessage = messages.length ? messages[messages.length - 1] : null;
       return [ticket.id, ticket.status, messages.length, lastMessage?.timestamp || 0];
-    })
+    }),
+    audit: (state?.audit_log || []).slice(0, 12).map(entry => [entry.id, entry.timestamp]),
+    leaderboard: (state?.leaderboard || []).map(entry => [entry.key, entry.updated_at])
   });
 }
 
@@ -871,7 +881,7 @@ function getCurrentPanelId() {
 }
 
 function isCommunityPanelActive() {
-  return ['panel-marketplace', 'panel-moderation', 'panel-admin'].includes(getCurrentPanelId());
+  return ['panel-marketplace', 'panel-leaderboard', 'panel-moderation', 'panel-admin'].includes(getCurrentPanelId());
 }
 
 function renderTicketMessagesInto(ticketId, scope = 'user') {
@@ -1408,6 +1418,8 @@ function loadState(){
     player_data: null,
     banned_users: [],
     user_sessions: {},
+    audit_log: [],
+    leaderboard: [],
     tickets: [],
     session_start_gp: 0
   };
@@ -1424,6 +1436,8 @@ function saveState(){
 const ONLINE_TIMEOUT_MS = 15 * 60 * 1000;
 let authUsersCache = null;
 let adminServerRegistryUsers = [];
+let leaderboardMode = 'overall';
+let lastLeaderboardPublishAt = 0;
 
 function normalizeAuthUserRecord(user) {
   return {
@@ -1696,6 +1710,7 @@ async function trackUserActivity() {
     if (getCommunityApiBase()) {
       try {
         await postCommunityAction('heartbeat', { session_key: sessionKey, timestamp: now });
+        if (currentUser?.email) void publishLeaderboardSnapshot({ silent: true });
       } catch (e) {
         console.warn('trackUserActivity heartbeat', e);
       }
@@ -2221,6 +2236,176 @@ function renderAdminOverview() {
   });
 }
 
+function renderAdminLiveDashboard() {
+  if (!isAdminUser()) return;
+  const liveEl = document.getElementById('admin-live-dashboard');
+  const auditEl = document.getElementById('admin-audit-log');
+  const now = Date.now();
+  const sessions = Object.entries(state?.user_sessions || {}).filter(([_, ts]) => now - Number(ts) < ONLINE_TIMEOUT_MS);
+  const guestCount = sessions.filter(([key]) => String(key).startsWith('guest:')).length;
+  const memberCount = Math.max(0, sessions.length - guestCount);
+  const openTickets = (state?.tickets || []).filter(t => String(t.status || 'open') !== 'resolved').length;
+  const pendingListings = (state?.marketplace_listings || []).filter(l => String(l.status || '') === 'pending').length;
+  const latestTicket = (state?.tickets || [])[0];
+  const latestListing = (state?.marketplace_listings || [])[0];
+  if (liveEl) {
+    liveEl.innerHTML = `
+      <div class="admin-pulse-grid">
+        <div class="admin-pulse-tile"><span>Online Now</span><strong>${sessions.length}</strong><small>${guestCount} guests · ${memberCount} members</small></div>
+        <div class="admin-pulse-tile"><span>Open Tickets</span><strong>${openTickets}</strong><small>${latestTicket ? escapeHtml(latestTicket.username || latestTicket.type || 'Latest ticket') : 'No tickets yet'}</small></div>
+        <div class="admin-pulse-tile"><span>Pending Listings</span><strong>${pendingListings}</strong><small>${latestListing ? escapeHtml(latestListing.username || 'Latest listing') : 'No listings yet'}</small></div>
+        <div class="admin-pulse-tile"><span>Leaderboard</span><strong>${(state.leaderboard || []).length}</strong><small>Public profiles ranked</small></div>
+      </div>
+      <div class="admin-live-strip">
+        ${(state.audit_log || []).slice(0, 4).map(entry => `
+          <div class="admin-live-event">
+            <span>${escapeHtml(entry.type)}</span>
+            <strong>${escapeHtml(entry.label)}</strong>
+            <small>${escapeHtml(entry.actor)}${entry.target ? ` · ${escapeHtml(entry.target)}` : ''} · ${timeAgo(entry.timestamp)}</small>
+          </div>
+        `).join('') || '<div class="empty compact">No audit events yet.</div>'}
+      </div>
+    `;
+  }
+  if (auditEl) {
+    auditEl.innerHTML = (state.audit_log || []).length
+      ? (state.audit_log || []).slice(0, 80).map(entry => `
+        <div class="audit-row">
+          <div><span>${escapeHtml(entry.type)}</span><strong>${escapeHtml(entry.label)}</strong></div>
+          <div>${escapeHtml(entry.actor)}${entry.target ? ` · ${escapeHtml(entry.target)}` : ''}<br><small>${timeAgo(entry.timestamp)}</small></div>
+        </div>
+      `).join('')
+      : '<div class="empty compact">No audit events yet.</div>';
+  }
+}
+
+function getLeaderboardKey() {
+  if (!currentUser) return '';
+  return String(currentUser.display_name || currentUser.email || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '-').slice(0, 80);
+}
+
+function buildLeaderboardEntry() {
+  if (!currentUser) return null;
+  const email = String(currentUser.email || '').trim().toLowerCase();
+  const display = String(currentUser.display_name || currentUser.email || 'Player').trim();
+  const completedFlips = (state.trades || []).filter(t => t.status === 'completed' && String(t.actor_email || '').toLowerCase() === email);
+  const fpRows = (state.fp_logs || []).filter(row => String(row.actor_email || '').toLowerCase() === email);
+  const slayerRows = (state.slayer_logs || []).filter(row => String(row.actor_email || '').toLowerCase() === email);
+  const priceRows = (state.community_prices || []).filter(row => String(row.user_email || '').toLowerCase() === email);
+  const listingRows = (state.marketplace_listings || []).filter(row => String(row.seller_email || '').toLowerCase() === email);
+  return {
+    key: getLeaderboardKey(),
+    display,
+    flip_profit: completedFlips.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
+    flip_count: completedFlips.length,
+    fp_profit: fpRows.reduce((sum, row) => sum + (Number(row.net) || 0), 0),
+    fp_sessions: fpRows.length,
+    slayer_profit: slayerRows.reduce((sum, row) => sum + (Number(row.gp) || 0), 0),
+    slayer_sessions: slayerRows.length,
+    price_submissions: priceRows.length,
+    marketplace_listings: listingRows.length,
+    updated_at: Date.now()
+  };
+}
+
+async function publishLeaderboardSnapshot(options = {}) {
+  if (!currentUser?.email) {
+    if (!options.silent) alert('Sign in first so your display name can appear on the leaderboard.');
+    return false;
+  }
+  const entry = buildLeaderboardEntry();
+  if (!entry?.key) return false;
+  const existing = (state.leaderboard || []).filter(row => row.key !== entry.key);
+  state.leaderboard = [...existing, entry];
+  saveState();
+  renderLeaderboard();
+  const now = Date.now();
+  if (options.silent && now - lastLeaderboardPublishAt < 120000) return true;
+  lastLeaderboardPublishAt = now;
+  if (getCommunityApiBase()) {
+    try {
+      await postCommunityAction('update_leaderboard', { entry });
+    } catch (e) {
+      console.warn('publishLeaderboardSnapshot', e);
+      if (!options.silent) alert('Could not update leaderboard yet.');
+      return false;
+    }
+  }
+  if (!options.silent) alert('Leaderboard updated.');
+  return true;
+}
+
+function getLeaderboardScore(row, mode = leaderboardMode) {
+  if (mode === 'flips') return Number(row.flip_profit) || 0;
+  if (mode === 'fp') return Number(row.fp_profit) || 0;
+  if (mode === 'slayer') return Number(row.slayer_profit) || 0;
+  if (mode === 'market') return (Number(row.price_submissions) || 0) + (Number(row.marketplace_listings) || 0);
+  return (Number(row.flip_profit) || 0) + (Number(row.fp_profit) || 0) + (Number(row.slayer_profit) || 0);
+}
+
+function getLeaderboardMeta(row, mode = leaderboardMode) {
+  if (mode === 'flips') return `${Number(row.flip_count) || 0} completed flips`;
+  if (mode === 'fp') return `${Number(row.fp_sessions) || 0} FP sessions`;
+  if (mode === 'slayer') return `${Number(row.slayer_sessions) || 0} Slayer logs`;
+  if (mode === 'market') return `${Number(row.price_submissions) || 0} prices · ${Number(row.marketplace_listings) || 0} listings`;
+  return `${Number(row.flip_count) || 0} flips · ${Number(row.fp_sessions) || 0} FP · ${Number(row.slayer_sessions) || 0} Slayer`;
+}
+
+function setLeaderboardMode(mode) {
+  leaderboardMode = ['overall', 'flips', 'fp', 'slayer', 'market'].includes(mode) ? mode : 'overall';
+  document.querySelectorAll('.leaderboard-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.leaderboardMode === leaderboardMode);
+  });
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const grid = document.getElementById('leaderboard-grid');
+  if (!grid) return;
+  const rows = (state.leaderboard || [])
+    .slice()
+    .sort((a, b) => getLeaderboardScore(b) - getLeaderboardScore(a) || String(a.display || '').localeCompare(String(b.display || '')))
+    .slice(0, 50);
+  if (!rows.length) {
+    grid.innerHTML = '<div class="empty">No leaderboard profiles yet. Sign in, log activity, then click Update My Rank.</div>';
+    return;
+  }
+  grid.innerHTML = rows.map((row, index) => {
+    const score = getLeaderboardScore(row);
+    const isGpMode = leaderboardMode !== 'market';
+    return `
+      <div class="leaderboard-card ${index < 3 ? 'podium' : ''}">
+        <div class="leaderboard-rank">#${index + 1}</div>
+        <div class="leaderboard-player">
+          <strong>${escapeHtml(row.display || 'Player')}</strong>
+          <span>${getLeaderboardMeta(row)}</span>
+        </div>
+        <div class="leaderboard-score ${score >= 0 ? 'green' : 'red'}">${isGpMode ? `${fmtGP(score)} GP` : `${score} pts`}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function logAuditEvent(type, label, target = '') {
+  const entry = {
+    id: generateId(),
+    type: String(type || 'site'),
+    label: String(label || 'Site activity'),
+    actor: getActorDisplay() || currentUser?.email || 'System',
+    target: String(target || ''),
+    timestamp: Date.now()
+  };
+  state.audit_log = [entry, ...(state.audit_log || [])].slice(0, 200);
+  saveState();
+  renderAdminLiveDashboard();
+  if (!getCommunityApiBase()) return;
+  try {
+    await postCommunityAction('log_audit', { entry });
+  } catch (e) {
+    console.warn('logAuditEvent', e);
+  }
+}
+
 function getAdminKnownUsers() {
   const map = new Map();
   [...loadAuthUsers(), ...(adminServerRegistryUsers || [])].forEach(user => {
@@ -2341,6 +2526,7 @@ async function adminSetServerRole(targetEmail, role, enabled) {
       saveAuthUsers(localUsers);
     }
     setAdminRegistryStatus(`Updated ${email}: ${enabled ? role : `not ${role}`}.`, 'success');
+    void logAuditEvent('role', `${enabled ? 'Granted' : 'Removed'} ${role}`, knownUser?.display_name || email);
     renderAdminSiteRegistry();
     renderAdminUserList();
     renderAdminOverview();
@@ -2416,6 +2602,7 @@ async function refreshAdminDashboard() {
   renderAdminPaymentHints();
   await renderAdminSiteRegistry();
   renderAdminOverview();
+  renderAdminLiveDashboard();
   populateAdminRoleSuggestions();
   renderAdminRoleTarget();
 }
@@ -4253,6 +4440,7 @@ function updateAuthUI() {
     void renderAdminSiteRegistry();
     renderAdminPaymentHints();
     renderAdminOverview();
+    renderAdminLiveDashboard();
     populateAdminRoleSuggestions();
     renderAdminRoleTarget();
   }
@@ -4951,6 +5139,34 @@ function normalizeState(){
       state.user_sessions[safeKey] = ts;
     }
   });
+  state.audit_log = Array.isArray(state.audit_log) ? state.audit_log : [];
+  state.audit_log = state.audit_log
+    .map(entry => ({
+      id: String(entry.id || generateId()),
+      type: String(entry.type || 'site'),
+      label: String(entry.label || 'Site activity').slice(0, 160),
+      actor: String(entry.actor || 'System').slice(0, 80),
+      target: String(entry.target || '').slice(0, 120),
+      timestamp: Number(entry.timestamp) || Date.now()
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 200);
+  state.leaderboard = Array.isArray(state.leaderboard) ? state.leaderboard : [];
+  state.leaderboard = state.leaderboard
+    .map(row => ({
+      key: String(row.key || '').trim().toLowerCase(),
+      display: String(row.display || 'Player').trim().slice(0, 60) || 'Player',
+      flip_profit: Number(row.flip_profit) || 0,
+      flip_count: Number(row.flip_count) || 0,
+      fp_profit: Number(row.fp_profit) || 0,
+      fp_sessions: Number(row.fp_sessions) || 0,
+      slayer_profit: Number(row.slayer_profit) || 0,
+      slayer_sessions: Number(row.slayer_sessions) || 0,
+      price_submissions: Number(row.price_submissions) || 0,
+      marketplace_listings: Number(row.marketplace_listings) || 0,
+      updated_at: Number(row.updated_at) || Date.now()
+    }))
+    .filter(row => row.key && row.display);
 
   state.trades.forEach(t => {
     if (!t.id) t.id = generateId();
@@ -5979,7 +6195,7 @@ async function switchTab(tab){
   const navItem = document.querySelector(`.nav-item[onclick*="switchTab('${tab}')"]`);
   if(navItem) navItem.classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
-  if (tab === 'marketplace' || tab === 'moderation' || tab === 'admin') {
+  if (tab === 'marketplace' || tab === 'leaderboard' || tab === 'moderation' || tab === 'admin') {
     await syncCommunityStateFromServer();
   }
   recalcItemStats();
@@ -6000,6 +6216,7 @@ async function switchTab(tab){
     loadAdminTickets();
     renderAdminPendingListings();
     renderAdminOverview();
+    renderAdminLiveDashboard();
     populateAdminRoleSuggestions();
     renderAdminRoleTarget();
   }
@@ -6096,6 +6313,7 @@ function confirmSellTrade(id){
   sessionProfit += trade.profit;
   recalcItemStats();
   saveState();
+  void publishLeaderboardSnapshot({ silent: true });
   render();
 }
 
@@ -6665,6 +6883,7 @@ async function submitMarketplaceListing() {
   }
   openTicketThreads.add(ticket.id);
   trackUserActivity();
+  void publishLeaderboardSnapshot({ silent: true });
   clearMarketplaceForm();
   renderMarketplace();
   alert(`Listing submitted! Contact an Impact MOD in your ticket below to verify your ${fmtGP(MARKETPLACE_LISTING_FEE)} GP deposit.`);
@@ -7025,6 +7244,7 @@ function logSlayerGP(){
   });
   saveState();
   trackUserActivity();
+  void publishLeaderboardSnapshot({ silent: true });
   recalcItemStats();
   render();
   document.getElementById('slayer-gp').value = '';
@@ -7076,6 +7296,7 @@ function logFpSession(){
   state.fp_settings.base_stake = plan.baseStake;
   saveState();
   trackUserActivity();
+  void publishLeaderboardSnapshot({ silent: true });
   recalcItemStats();
   render();
   document.getElementById('fp-net').value = '';
@@ -7449,6 +7670,7 @@ function submitCommunityPrice() {
 
   saveState();
   trackUserActivity();
+  void publishLeaderboardSnapshot({ silent: true });
   document.getElementById('price-item-input').value = '';
   renderCommunityPriceDesk();
   renderGoals();
@@ -8322,11 +8544,13 @@ function renderPanel(tab){
   if(tab==='log') renderFavorites();
   if(tab==='skilling') renderSkilling();
   if(tab==='marketplace') renderMarketplace();
+  if(tab==='leaderboard') renderLeaderboard();
   if(tab==='moderation') renderModerationPanel();
   if (tab === 'admin') {
     void renderAdminSiteRegistry();
     renderAdminPaymentHints();
     renderAdminOverview();
+    renderAdminLiveDashboard();
     populateAdminRoleSuggestions();
     renderAdminRoleTarget();
   }
@@ -8454,6 +8678,7 @@ function render(){
   renderDashboard();
   renderStatsDashboard();
   renderMarketplace();
+  renderLeaderboard();
   renderAdSlots();
   updateAuthUI();
   renderLinkedAccountsEditor();

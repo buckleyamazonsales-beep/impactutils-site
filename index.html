@@ -295,6 +295,9 @@
         <div class="nav-item" onclick="switchTab('marketplace')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Marketplace
         </div>
+        <div class="nav-item" onclick="switchTab('leaderboard')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zm10 2h3a3 3 0 01-3 3M7 6H4a3 3 0 003 3"/></svg>Leaderboard
+        </div>
         <div class="nav-item hidden" id="nav-moderation" onclick="switchTab('moderation')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Mod Desk
         </div>
@@ -1177,6 +1180,29 @@
       </div>
     </div>
 
+    <div id="panel-leaderboard" class="panel">
+      <div class="page-header">
+        <div class="page-title">Leaderboard</div>
+        <div class="page-subtitle">Public rankings show usernames only. No individual flip, FP, or Slayer logs are exposed.</div>
+      </div>
+      <div class="leaderboard-hero card">
+        <div>
+          <div class="admin-eyebrow">Community Rankings</div>
+          <div class="leaderboard-title">Compete without leaking methods.</div>
+          <div class="admin-card-copy">Your browser publishes only totals under your display name when you are signed in. Detailed rows stay private to your account.</div>
+        </div>
+        <button class="btn primary" onclick="publishLeaderboardSnapshot()">Update My Rank</button>
+      </div>
+      <div class="leaderboard-tabs">
+        <button class="leaderboard-tab active" data-leaderboard-mode="overall" onclick="setLeaderboardMode('overall')">Overall</button>
+        <button class="leaderboard-tab" data-leaderboard-mode="flips" onclick="setLeaderboardMode('flips')">Flipping</button>
+        <button class="leaderboard-tab" data-leaderboard-mode="fp" onclick="setLeaderboardMode('fp')">FP</button>
+        <button class="leaderboard-tab" data-leaderboard-mode="slayer" onclick="setLeaderboardMode('slayer')">Slayer</button>
+        <button class="leaderboard-tab" data-leaderboard-mode="market" onclick="setLeaderboardMode('market')">Community</button>
+      </div>
+      <div class="leaderboard-grid" id="leaderboard-grid"></div>
+    </div>
+
     <div id="panel-admin" class="panel">
       <div class="page-header">
         <div class="page-title">🔒 Admin Command Center</div>
@@ -1213,6 +1239,28 @@
             <span>Pending Listings</span>
             <strong id="admin-pending-count">0</strong>
           </div>
+        </div>
+
+        <div class="admin-live-grid">
+          <section class="card admin-live-card">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">📡 Live Site Pulse</div>
+                <p>Guests, members, pending work, and new community movement at a glance.</p>
+              </div>
+              <button class="btn" onclick="renderAdminLiveDashboard()">Refresh Pulse</button>
+            </div>
+            <div id="admin-live-dashboard" class="admin-live-dashboard"></div>
+          </section>
+          <section class="card admin-live-card">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">🧾 Audit Log</div>
+                <p>Role changes, staff actions, tickets, and marketplace approvals.</p>
+              </div>
+            </div>
+            <div id="admin-audit-log" class="admin-audit-log"></div>
+          </section>
         </div>
 
         <div class="admin-section-grid">

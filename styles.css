@@ -363,6 +363,31 @@
 .role-pill.admin{color:var(--amber);border-color:var(--amber-border);background:var(--amber-bg);}
 .role-pill.mod{color:var(--accent);border-color:var(--border2);background:var(--accent-bg);}
 .role-pill.empire{color:var(--green);border-color:var(--green-border);background:rgba(89,240,168,0.08);}
+.admin-live-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;}
+.admin-live-card{min-width:0;}
+.admin-pulse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px;}
+.admin-pulse-tile{padding:14px;border-radius:18px;border:1px solid var(--border);background:rgba(255,255,255,0.025);}
+.admin-pulse-tile span{display:block;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px;}
+.admin-pulse-tile strong{display:block;font-size:24px;color:var(--accent);line-height:1;margin-bottom:7px;}
+.admin-pulse-tile small,.admin-live-event small,.audit-row small{color:var(--muted);font-size:11px;line-height:1.5;}
+.admin-live-strip,.admin-audit-log{display:grid;gap:10px;max-height:360px;overflow:auto;}
+.admin-live-event,.audit-row{padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,0.025);}
+.admin-live-event span,.audit-row span{display:inline-flex;margin-bottom:6px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;}
+.admin-live-event strong,.audit-row strong{display:block;font-size:13px;margin-bottom:4px;}
+.audit-row{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;}
+.audit-row>div:last-child{text-align:right;color:var(--muted);font-size:12px;}
+.leaderboard-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;border-color:rgba(255,209,102,0.22);background:linear-gradient(135deg, rgba(143,103,24,0.24), rgba(13,76,86,0.14) 62%, rgba(255,255,255,0.02));}
+.leaderboard-title{font-size:28px;font-weight:800;line-height:1.08;margin-bottom:8px;}
+.leaderboard-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;}
+.leaderboard-tab{padding:10px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;}
+.leaderboard-tab.active{color:var(--accent);border-color:var(--border2);background:var(--accent-bg);}
+.leaderboard-grid{display:grid;gap:12px;}
+.leaderboard-card{display:grid;grid-template-columns:74px 1fr minmax(140px,auto);gap:14px;align-items:center;padding:16px;border-radius:20px;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface2),rgba(255,255,255,0.02));}
+.leaderboard-card.podium{border-color:rgba(255,209,102,0.28);background:linear-gradient(135deg, rgba(255,209,102,0.1), rgba(61,217,197,0.06));}
+.leaderboard-rank{font-size:18px;font-weight:800;color:var(--amber);font-family:'IBM Plex Mono',monospace;}
+.leaderboard-player strong{display:block;font-size:16px;margin-bottom:5px;}
+.leaderboard-player span{font-size:12px;color:var(--muted);}
+.leaderboard-score{text-align:right;font-size:16px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
 .roadmap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
 .roadmap-section{margin-bottom:18px;padding:18px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));}
 .roadmap-section-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
@@ -452,9 +477,16 @@
     .admin-hero,
     .admin-section-title{flex-direction:column;align-items:stretch;}
     .admin-kpi-grid,
+    .admin-live-grid,
+    .admin-pulse-grid,
     .admin-section-grid,
     .admin-two-column,
     .admin-role-card{grid-template-columns:1fr;}
+    .leaderboard-hero{flex-direction:column;align-items:stretch;}
+    .leaderboard-card{grid-template-columns:1fr;align-items:flex-start;}
+    .leaderboard-score{text-align:left;}
+    .audit-row{flex-direction:column;}
+    .audit-row>div:last-child{text-align:left;}
     .skilling-source-link{white-space:normal;}
     .goal-actions{grid-template-columns:1fr;}
     .goal-suggestion-grid{grid-template-columns:1fr;}

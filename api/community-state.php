@@ -83,6 +83,54 @@ function impact_community_normalize_listing($listing) {
     ];
 }
 
+function impact_community_normalize_audit($entry) {
+    if (!is_array($entry)) {
+        $entry = [];
+    }
+    return [
+        'id' => (string)($entry['id'] ?? uniqid('audit-', true)),
+        'type' => trim((string)($entry['type'] ?? 'site')) ?: 'site',
+        'label' => trim((string)($entry['label'] ?? 'Site activity')) ?: 'Site activity',
+        'actor' => trim((string)($entry['actor'] ?? 'System')) ?: 'System',
+        'target' => trim((string)($entry['target'] ?? '')),
+        'timestamp' => (int)($entry['timestamp'] ?? round(microtime(true) * 1000)),
+    ];
+}
+
+function impact_community_add_audit(&$state, $type, $label, $actor = 'System', $target = '') {
+    if (empty($state['audit_log']) || !is_array($state['audit_log'])) {
+        $state['audit_log'] = [];
+    }
+    array_unshift($state['audit_log'], impact_community_normalize_audit([
+        'type' => $type,
+        'label' => $label,
+        'actor' => $actor,
+        'target' => $target,
+    ]));
+    $state['audit_log'] = array_slice($state['audit_log'], 0, 200);
+}
+
+function impact_community_normalize_leaderboard($row) {
+    if (!is_array($row)) {
+        $row = [];
+    }
+    $key = strtolower(trim((string)($row['key'] ?? '')));
+    $display = trim((string)($row['display'] ?? 'Player')) ?: 'Player';
+    return [
+        'key' => $key,
+        'display' => $display,
+        'flip_profit' => (float)($row['flip_profit'] ?? 0),
+        'flip_count' => (int)($row['flip_count'] ?? 0),
+        'fp_profit' => (float)($row['fp_profit'] ?? 0),
+        'fp_sessions' => (int)($row['fp_sessions'] ?? 0),
+        'slayer_profit' => (float)($row['slayer_profit'] ?? 0),
+        'slayer_sessions' => (int)($row['slayer_sessions'] ?? 0),
+        'price_submissions' => (int)($row['price_submissions'] ?? 0),
+        'marketplace_listings' => (int)($row['marketplace_listings'] ?? 0),
+        'updated_at' => (int)($row['updated_at'] ?? round(microtime(true) * 1000)),
+    ];
+}
+
 function impact_community_normalize_state($state) {
     if (!is_array($state)) {
         $state = [];
@@ -122,10 +170,32 @@ function impact_community_normalize_state($state) {
         }
     }
 
+    $audit = [];
+    foreach (($state['audit_log'] ?? []) as $entry) {
+        $normalized = impact_community_normalize_audit($entry);
+        if ($normalized['id'] !== '') {
+            $audit[] = $normalized;
+        }
+    }
+    usort($audit, static function ($a, $b) {
+        return ((int)($b['timestamp'] ?? 0)) <=> ((int)($a['timestamp'] ?? 0));
+    });
+    $audit = array_slice($audit, 0, 200);
+
+    $leaderboard = [];
+    foreach (($state['leaderboard'] ?? []) as $row) {
+        $normalized = impact_community_normalize_leaderboard($row);
+        if ($normalized['key'] !== '' && $normalized['display'] !== '') {
+            $leaderboard[$normalized['key']] = $normalized;
+        }
+    }
+
     return [
         'marketplace_listings' => array_values($listings),
         'tickets' => array_values($tickets),
         'user_sessions' => $sessions,
+        'audit_log' => $audit,
+        'leaderboard' => array_values($leaderboard),
     ];
 }
 
@@ -215,6 +285,7 @@ if ($action === '') {
         }
         array_unshift($state['marketplace_listings'], $listing);
         array_unshift($state['tickets'], $ticket);
+        impact_community_add_audit($state, 'marketplace', 'Submitted marketplace listing', $listing['seller'], $listing['username']);
         return;
     }
 
@@ -224,6 +295,7 @@ if ($action === '') {
             throw new RuntimeException('Ticket requires username, amount, and creator.');
         }
         array_unshift($state['tickets'], $ticket);
+        impact_community_add_audit($state, 'ticket', 'Created deposit ticket', $ticket['created_by_display'], $ticket['username']);
         return;
     }
 
@@ -244,6 +316,7 @@ if ($action === '') {
             if (array_key_exists('cancelled_at', $payload)) {
                 $listing['cancelled_at'] = trim((string)($payload['cancelled_at'] ?? ''));
             }
+            impact_community_add_audit($state, 'marketplace', 'Updated listing status to ' . ($listing['status'] ?: 'pending'), (string)($payload['actor_display'] ?? 'Staff'), (string)($listing['username'] ?? ''));
             return;
         }
         throw new RuntimeException('Listing not found.');
@@ -263,6 +336,9 @@ if ($action === '') {
                 throw new RuntimeException('This ticket is closed.');
             }
             $ticket['messages'][] = $message;
+            if (!empty($message['isStaff'])) {
+                impact_community_add_audit($state, 'ticket', 'Staff replied to ticket', $message['sender_display'], (string)($ticket['username'] ?? ''));
+            }
             return;
         }
         throw new RuntimeException('Ticket not found.');
@@ -283,6 +359,7 @@ if ($action === '') {
                 }
             }
             $ticket['status'] = $status ?: (string)($ticket['status'] ?? 'open');
+            impact_community_add_audit($state, 'ticket', 'Updated ticket status to ' . $ticket['status'], (string)($payload['actor_display'] ?? 'Staff'), (string)($ticket['username'] ?? ''));
             return;
         }
         throw new RuntimeException('Ticket not found.');
@@ -301,6 +378,32 @@ if ($action === '') {
             $state['user_sessions'] = [];
         }
         $state['user_sessions'][$sessionKey] = $timestamp > 0 ? $timestamp : (int)round(microtime(true) * 1000);
+        return;
+    }
+
+    if ($action === 'update_leaderboard') {
+        $row = impact_community_normalize_leaderboard($payload['entry'] ?? []);
+        if ($row['key'] === '' || $row['display'] === '') {
+            throw new RuntimeException('Leaderboard entry requires key and display.');
+        }
+        if (empty($state['leaderboard']) || !is_array($state['leaderboard'])) {
+            $state['leaderboard'] = [];
+        }
+        $next = [];
+        foreach ($state['leaderboard'] as $existing) {
+            $normalized = impact_community_normalize_leaderboard($existing);
+            if ($normalized['key'] !== '' && $normalized['key'] !== $row['key']) {
+                $next[] = $normalized;
+            }
+        }
+        $next[] = $row;
+        $state['leaderboard'] = $next;
+        return;
+    }
+
+    if ($action === 'log_audit') {
+        $entry = impact_community_normalize_audit($payload['entry'] ?? []);
+        impact_community_add_audit($state, $entry['type'], $entry['label'], $entry['actor'], $entry['target']);
         return;
     }
 
