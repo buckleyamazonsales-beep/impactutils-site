@@ -44,7 +44,6 @@ function normalize_skill_key(string $name): string {
     'runecrafting' => 'runecrafting',
     'runecraft' => 'runecrafting',
     'hunter' => 'hunter',
-    'construction' => 'construction',
   ];
   return $map[$name] ?? preg_replace('/[^a-z]/', '', $name);
 }
@@ -151,7 +150,6 @@ function parse_impact_hiscores_text(string $html): array {
     'Farming',
     'Runecrafting',
     'Hunter',
-    'Construction',
   ];
 
   $skills = [];

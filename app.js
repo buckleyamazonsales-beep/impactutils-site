@@ -42,8 +42,7 @@ const SKILL_MILESTONES = {
   "Slayer": [10, 25, 40, 55, 70, 80, 87, 90, 95, 99],
   "Farming": [...GENERAL_SKILL_MILESTONES],
   "Runecrafting": [...GENERAL_SKILL_MILESTONES],
-  "Hunter": [...GENERAL_SKILL_MILESTONES],
-  "Construction": [...GENERAL_SKILL_MILESTONES]
+  "Hunter": [...GENERAL_SKILL_MILESTONES]
 };
 
 const SKILL_STEP_TARGETS = {
@@ -68,7 +67,6 @@ const SKILL_STEP_TARGETS = {
   Farming: [...GENERAL_SKILL_STEP_TARGETS],
   Runecrafting: [...GENERAL_SKILL_STEP_TARGETS],
   Hunter: [...GENERAL_SKILL_STEP_TARGETS],
-  Construction: [...GENERAL_SKILL_STEP_TARGETS],
   Slayer: [10, 25, 40, 55, 70, 75, 80, 85, 87, 90, 92, 95, 97, 99]
 };
 
@@ -84,7 +82,6 @@ const XP_GOAL_PRIORITY = {
   Herblore: 84,
   Agility: 82,
   Crafting: 80,
-  Construction: 79,
   Hunter: 77,
   Thieving: 76,
   Farming: 74,
