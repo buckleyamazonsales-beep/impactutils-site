@@ -282,6 +282,9 @@
         <div class="nav-item" onclick="switchTab('skilling')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c-2.5 2.2-4 4.6-4 7.2 0 2.1 1.1 3.8 4 5.1m0-12.3c2.5 2.2 4 4.6 4 7.2 0 2.1-1.1 3.8-4 5.1M5 21h14"/></svg>Skilling
         </div>
+        <div class="nav-item" onclick="switchTab('maps')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3zm0 0V3m6 18V6"/></svg>Maps
+        </div>
         <div class="nav-item" onclick="switchTab('slayer')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.868v4.264a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Slayer
         </div>
@@ -910,6 +913,36 @@
       </div>
     </div>
 
+    <div id="panel-maps" class="panel">
+      <div class="page-header maps-header">
+        <div>
+          <div class="page-title">Maps & Teleport Tree</div>
+          <div class="page-subtitle">Impact route finder built around the teleport tree. Admins can add exact destinations as we verify them.</div>
+        </div>
+      </div>
+      <div class="maps-control-card card">
+        <div>
+          <div class="card-title">Teleport Directory</div>
+          <div class="admin-card-copy">Search bosses, Slayer spots, skilling locations, shops, wilderness routes, and clan notes. Unverified cards are placeholders until confirmed in Impact.</div>
+        </div>
+        <div class="maps-controls">
+          <input type="text" id="maps-search" placeholder="Search destination, use, notes..." oninput="renderMaps()">
+          <select id="maps-category" onchange="renderMaps()">
+            <option value="">All categories</option>
+          </select>
+          <select id="maps-risk" onchange="renderMaps()">
+            <option value="">All risk levels</option>
+            <option value="Safe">Safe</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Wilderness">Wilderness</option>
+          </select>
+        </div>
+      </div>
+      <div class="maps-grid" id="maps-grid"></div>
+    </div>
+
     <div id="panel-slayer" class="panel">
       <div class="page-header">
         <div class="page-title">Slayer</div>
@@ -1355,6 +1388,34 @@
             <div class="card-title">💎 Price Submissions</div>
             <div class="admin-card-copy">See every price submission from users with trust signals.</div>
             <div id="admin-prices-list" class="admin-scroll-box"></div>
+          </section>
+
+          <section class="card admin-section-card wide">
+            <div class="admin-section-title">
+              <div>
+                <div class="card-title">🗺️ Teleport Directory Editor</div>
+                <p>Add exact Impact teleport tree destinations as you verify them. Public Maps uses this data immediately.</p>
+              </div>
+              <button class="btn" onclick="clearTeleportEditor()">New Destination</button>
+            </div>
+            <input type="hidden" id="admin-teleport-id">
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Category</label><input type="text" id="admin-teleport-category" placeholder="Bosses, Slayer, Skilling, Shops..."></div>
+              <div class="form-group"><label class="form-label">Destination</label><input type="text" id="admin-teleport-name" placeholder="e.g. Zulrah"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Teleport tree path</label><input type="text" id="admin-teleport-path" placeholder="Teleport Tree → Bosses → Zulrah"></div>
+              <div class="form-group"><label class="form-label">Risk</label><select id="admin-teleport-risk"><option>Safe</option><option>Low</option><option>Medium</option><option>High</option><option>Wilderness</option></select></div>
+              <div class="form-group"><label class="form-label">Requirements</label><input type="text" id="admin-teleport-req" placeholder="Stats, quest, key, none..."></div>
+              <div class="form-group"><label class="form-label">Use Case</label><input type="text" id="admin-teleport-use" placeholder="Money maker, task, shop, skilling..."></div>
+              <div class="form-group"><label class="form-label">Recommended Gear</label><input type="text" id="admin-teleport-gear" placeholder="Optional gear/value cap"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Notes</label><textarea id="admin-teleport-notes" placeholder="Bank route, safespot, multi warning, escape route..."></textarea></div>
+            </div>
+            <label class="check-row"><input type="checkbox" id="admin-teleport-verified"> Verified in-game</label>
+            <div class="btn-row">
+              <button class="btn primary" onclick="saveTeleportFromAdmin()">Save Destination</button>
+              <button class="btn" onclick="deleteTeleportFromAdmin()">Delete Selected</button>
+            </div>
+            <div id="admin-teleport-status" class="profit-preview" style="display:none;"></div>
+            <div id="admin-teleport-list" class="maps-admin-list"></div>
           </section>
 
           <section class="card admin-section-card">

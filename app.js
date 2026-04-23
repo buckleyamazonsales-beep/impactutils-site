@@ -814,11 +814,16 @@ function applyCommunityStatePayload(data = {}) {
   if (Array.isArray(data.leaderboard)) {
     state.leaderboard = data.leaderboard;
   }
+  if (Array.isArray(data.teleports)) {
+    state.teleports = data.teleports;
+  }
   normalizeState();
   saveState();
   updateOnlineIndicator();
   renderLeaderboard();
+  renderMaps();
   renderAdminLiveDashboard();
+  renderAdminTeleportList();
 }
 
 async function syncCommunityStateFromServer() {
@@ -872,7 +877,8 @@ function getCommunitySnapshot() {
       return [ticket.id, ticket.status, messages.length, lastMessage?.timestamp || 0];
     }),
     audit: (state?.audit_log || []).slice(0, 12).map(entry => [entry.id, entry.timestamp]),
-    leaderboard: (state?.leaderboard || []).map(entry => [entry.key, entry.updated_at])
+    leaderboard: (state?.leaderboard || []).map(entry => [entry.key, entry.updated_at]),
+    teleports: (state?.teleports || []).map(entry => [entry.id, entry.updated_at])
   });
 }
 
@@ -881,7 +887,7 @@ function getCurrentPanelId() {
 }
 
 function isCommunityPanelActive() {
-  return ['panel-marketplace', 'panel-leaderboard', 'panel-moderation', 'panel-admin'].includes(getCurrentPanelId());
+  return ['panel-marketplace', 'panel-leaderboard', 'panel-maps', 'panel-moderation', 'panel-admin'].includes(getCurrentPanelId());
 }
 
 function renderTicketMessagesInto(ticketId, scope = 'user') {
@@ -1420,6 +1426,7 @@ function loadState(){
     user_sessions: {},
     audit_log: [],
     leaderboard: [],
+    teleports: [],
     tickets: [],
     session_start_gp: 0
   };
@@ -2386,6 +2393,195 @@ function renderLeaderboard() {
   }).join('');
 }
 
+const STARTER_TELEPORTS = [
+  { id: 'starter-home', category: 'Home', name: 'Home Hub', path: 'Teleport Tree -> Home', use_case: 'Core bank, shops, services, and return point.', requirements: 'None', risk: 'Safe', gear: 'Any', notes: 'Starter placeholder. Update the exact tree path if Impact labels it differently.', verified: false, updated_at: 1, updated_by: 'Starter' },
+  { id: 'starter-bosses', category: 'Bosses', name: 'Bosses Category', path: 'Teleport Tree -> Bosses', use_case: 'Add each boss here as you verify exact menu names.', requirements: 'Varies by boss', risk: 'Medium', gear: 'Boss setup', notes: 'Use Admin to add individual boss destinations with banking and gear notes.', verified: false, updated_at: 1, updated_by: 'Starter' },
+  { id: 'starter-slayer', category: 'Slayer', name: 'Slayer Category', path: 'Teleport Tree -> Slayer', use_case: 'Task locations and route notes.', requirements: 'Task dependent', risk: 'Low', gear: 'Task gear', notes: 'Add tasks with safespot, cannon/barrage, and drop notes as confirmed.', verified: false, updated_at: 1, updated_by: 'Starter' },
+  { id: 'starter-skilling', category: 'Skilling', name: 'Skilling Category', path: 'Teleport Tree -> Skilling', use_case: '1-99 gathering and production locations.', requirements: 'Skill level dependent', risk: 'Safe', gear: 'Tools/supplies', notes: 'Connect this with the Skilling tab over time.', verified: false, updated_at: 1, updated_by: 'Starter' },
+  { id: 'starter-wilderness', category: 'Wilderness', name: 'Wilderness Category', path: 'Teleport Tree -> Wilderness', use_case: 'Risk routes, PK zones, resource spots, and escape notes.', requirements: 'Risk tolerance', risk: 'Wilderness', gear: 'Low-risk gear cap', notes: 'Mark multi, escape routes, and recommended value cap for every Wilderness destination.', verified: false, updated_at: 1, updated_by: 'Starter' },
+  { id: 'starter-shops', category: 'Shops', name: 'Shops Category', path: 'Teleport Tree -> Shops', use_case: 'Supply runs, skilling purchases, and account setup.', requirements: 'None', risk: 'Safe', gear: 'Cash stack as needed', notes: 'Add shop names and best-use notes as verified.', verified: false, updated_at: 1, updated_by: 'Starter' },
+];
+
+function getTeleportDirectory() {
+  const map = new Map();
+  STARTER_TELEPORTS.forEach(row => map.set(row.id, row));
+  (state.teleports || []).forEach(row => map.set(row.id, row));
+  return Array.from(map.values()).sort((a, b) => String(a.category).localeCompare(String(b.category)) || String(a.name).localeCompare(String(b.name)));
+}
+
+function populateMapCategoryFilter() {
+  const select = document.getElementById('maps-category');
+  if (!select) return;
+  const prior = select.value;
+  const categories = [...new Set(getTeleportDirectory().map(row => row.category).filter(Boolean))].sort();
+  select.innerHTML = '<option value="">All categories</option>' + categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
+  if (categories.includes(prior)) select.value = prior;
+}
+
+function renderMaps() {
+  const grid = document.getElementById('maps-grid');
+  if (!grid) return;
+  populateMapCategoryFilter();
+  const search = String(document.getElementById('maps-search')?.value || '').trim().toLowerCase();
+  const category = String(document.getElementById('maps-category')?.value || '').trim();
+  const risk = String(document.getElementById('maps-risk')?.value || '').trim();
+  const rows = getTeleportDirectory().filter(row => {
+    const hay = [row.category, row.name, row.path, row.use_case, row.requirements, row.risk, row.gear, row.notes].join(' ').toLowerCase();
+    return (!search || hay.includes(search)) && (!category || row.category === category) && (!risk || row.risk === risk);
+  });
+  if (!rows.length) {
+    grid.innerHTML = '<div class="empty">No teleport destinations match that filter.</div>';
+    return;
+  }
+  grid.innerHTML = rows.map(row => `
+    <div class="map-card ${row.verified ? 'verified' : 'unverified'}">
+      <div class="map-card-top">
+        <div>
+          <div class="map-category">${escapeHtml(row.category)}</div>
+          <div class="map-title">${escapeHtml(row.name)}</div>
+        </div>
+        <span class="map-risk risk-${escapeHtml(String(row.risk || 'safe').toLowerCase())}">${escapeHtml(row.risk || 'Safe')}</span>
+      </div>
+      <div class="map-path">${escapeHtml(row.path || 'Teleport Tree')}</div>
+      <div class="map-detail-grid">
+        <div><span>Use</span><strong>${escapeHtml(row.use_case || 'Add use case')}</strong></div>
+        <div><span>Reqs</span><strong>${escapeHtml(row.requirements || 'None listed')}</strong></div>
+        <div><span>Gear</span><strong>${escapeHtml(row.gear || 'Any')}</strong></div>
+        <div><span>Status</span><strong>${row.verified ? 'Verified' : 'Needs verification'}</strong></div>
+      </div>
+      ${row.notes ? `<div class="map-notes">${escapeHtml(row.notes)}</div>` : ''}
+      ${isAdminUser() && !String(row.id || '').startsWith('starter-') ? `<button class="btn-sm" onclick="editTeleportFromAdmin('${escapeHtml(row.id)}');switchTab('admin')">Edit in Admin</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function setTeleportStatus(message = '', tone = 'muted') {
+  const el = document.getElementById('admin-teleport-status');
+  if (!el) return;
+  if (!message) {
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.textContent = message;
+  el.style.color = tone === 'error' ? 'var(--red)' : tone === 'success' ? 'var(--green)' : 'var(--muted)';
+}
+
+function clearTeleportEditor() {
+  ['admin-teleport-id', 'admin-teleport-category', 'admin-teleport-name', 'admin-teleport-path', 'admin-teleport-req', 'admin-teleport-use', 'admin-teleport-gear', 'admin-teleport-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const risk = document.getElementById('admin-teleport-risk');
+  if (risk) risk.value = 'Safe';
+  const verified = document.getElementById('admin-teleport-verified');
+  if (verified) verified.checked = false;
+  setTeleportStatus('');
+}
+
+function editTeleportFromAdmin(id) {
+  const row = getTeleportDirectory().find(entry => entry.id === id);
+  if (!row || String(row.id || '').startsWith('starter-')) return;
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+  };
+  set('admin-teleport-id', row.id);
+  set('admin-teleport-category', row.category);
+  set('admin-teleport-name', row.name);
+  set('admin-teleport-path', row.path);
+  set('admin-teleport-risk', row.risk);
+  set('admin-teleport-req', row.requirements);
+  set('admin-teleport-use', row.use_case);
+  set('admin-teleport-gear', row.gear);
+  set('admin-teleport-notes', row.notes);
+  const verified = document.getElementById('admin-teleport-verified');
+  if (verified) verified.checked = Boolean(row.verified);
+  setTeleportStatus(`Editing ${row.name}.`, 'muted');
+}
+
+function renderAdminTeleportList() {
+  if (!isAdminUser()) return;
+  const container = document.getElementById('admin-teleport-list');
+  if (!container) return;
+  const rows = (state.teleports || []).slice().sort((a, b) => String(a.category).localeCompare(String(b.category)) || String(a.name).localeCompare(String(b.name)));
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty compact">No verified custom destinations yet. Starter map categories still show publicly.</div>';
+    return;
+  }
+  container.innerHTML = rows.map(row => `
+    <div class="maps-admin-row">
+      <div>
+        <strong>${escapeHtml(row.name)}</strong>
+        <span>${escapeHtml(row.category)} · ${escapeHtml(row.path)} · ${row.verified ? 'Verified' : 'Needs verification'}</span>
+      </div>
+      <button class="btn-sm" onclick="editTeleportFromAdmin('${escapeHtml(row.id)}')">Edit</button>
+    </div>
+  `).join('');
+}
+
+async function saveTeleportFromAdmin() {
+  if (!isAdminUser()) return;
+  const teleport = {
+    id: document.getElementById('admin-teleport-id')?.value || generateId(),
+    category: document.getElementById('admin-teleport-category')?.value || 'General',
+    name: document.getElementById('admin-teleport-name')?.value || '',
+    path: document.getElementById('admin-teleport-path')?.value || 'Teleport Tree',
+    risk: document.getElementById('admin-teleport-risk')?.value || 'Safe',
+    requirements: document.getElementById('admin-teleport-req')?.value || '',
+    use_case: document.getElementById('admin-teleport-use')?.value || '',
+    gear: document.getElementById('admin-teleport-gear')?.value || '',
+    notes: document.getElementById('admin-teleport-notes')?.value || '',
+    verified: Boolean(document.getElementById('admin-teleport-verified')?.checked),
+    updated_at: Date.now(),
+    updated_by: getActorDisplay() || currentUser?.email || 'Admin'
+  };
+  if (!String(teleport.name || '').trim()) {
+    setTeleportStatus('Add a destination name first.', 'error');
+    return;
+  }
+  setTeleportStatus('Saving teleport...', 'muted');
+  try {
+    if (getCommunityApiBase()) {
+      await postCommunityAction('save_teleport', { teleport, actor_display: getActorDisplay() || 'Admin' });
+    } else {
+      state.teleports = (state.teleports || []).filter(row => row.id !== teleport.id).concat(teleport);
+      saveState();
+    }
+    setTeleportStatus('Teleport saved.', 'success');
+    clearTeleportEditor();
+    renderMaps();
+    renderAdminTeleportList();
+  } catch (e) {
+    setTeleportStatus(e.message || 'Could not save teleport.', 'error');
+  }
+}
+
+async function deleteTeleportFromAdmin() {
+  if (!isAdminUser()) return;
+  const id = document.getElementById('admin-teleport-id')?.value || '';
+  if (!id) {
+    setTeleportStatus('Select a saved destination first.', 'error');
+    return;
+  }
+  if (!confirm('Delete this teleport destination?')) return;
+  try {
+    if (getCommunityApiBase()) {
+      await postCommunityAction('delete_teleport', { teleport_id: id, actor_display: getActorDisplay() || 'Admin' });
+    } else {
+      state.teleports = (state.teleports || []).filter(row => row.id !== id);
+      saveState();
+    }
+    clearTeleportEditor();
+    renderMaps();
+    renderAdminTeleportList();
+    setTeleportStatus('Teleport deleted.', 'success');
+  } catch (e) {
+    setTeleportStatus(e.message || 'Could not delete teleport.', 'error');
+  }
+}
+
 async function logAuditEvent(type, label, target = '') {
   const entry = {
     id: generateId(),
@@ -2603,6 +2799,7 @@ async function refreshAdminDashboard() {
   await renderAdminSiteRegistry();
   renderAdminOverview();
   renderAdminLiveDashboard();
+  renderAdminTeleportList();
   populateAdminRoleSuggestions();
   renderAdminRoleTarget();
 }
@@ -5167,6 +5364,23 @@ function normalizeState(){
       updated_at: Number(row.updated_at) || Date.now()
     }))
     .filter(row => row.key && row.display);
+  state.teleports = Array.isArray(state.teleports) ? state.teleports : [];
+  state.teleports = state.teleports
+    .map(row => ({
+      id: String(row.id || generateId()),
+      category: String(row.category || 'General').trim().slice(0, 60) || 'General',
+      name: String(row.name || '').trim().slice(0, 80),
+      path: String(row.path || 'Teleport Tree').trim().slice(0, 160) || 'Teleport Tree',
+      use_case: String(row.use_case || '').trim().slice(0, 180),
+      requirements: String(row.requirements || '').trim().slice(0, 180),
+      risk: String(row.risk || 'Safe').trim().slice(0, 40) || 'Safe',
+      gear: String(row.gear || '').trim().slice(0, 180),
+      notes: String(row.notes || '').trim().slice(0, 400),
+      verified: Boolean(row.verified),
+      updated_at: Number(row.updated_at) || Date.now(),
+      updated_by: String(row.updated_by || '').trim().slice(0, 80)
+    }))
+    .filter(row => row.name);
 
   state.trades.forEach(t => {
     if (!t.id) t.id = generateId();
@@ -6195,7 +6409,7 @@ async function switchTab(tab){
   const navItem = document.querySelector(`.nav-item[onclick*="switchTab('${tab}')"]`);
   if(navItem) navItem.classList.add('active');
   document.getElementById('panel-'+tab).classList.add('active');
-  if (tab === 'marketplace' || tab === 'leaderboard' || tab === 'moderation' || tab === 'admin') {
+  if (tab === 'marketplace' || tab === 'leaderboard' || tab === 'maps' || tab === 'moderation' || tab === 'admin') {
     await syncCommunityStateFromServer();
   }
   recalcItemStats();
@@ -6217,6 +6431,7 @@ async function switchTab(tab){
     renderAdminPendingListings();
     renderAdminOverview();
     renderAdminLiveDashboard();
+    renderAdminTeleportList();
     populateAdminRoleSuggestions();
     renderAdminRoleTarget();
   }
@@ -8543,6 +8758,7 @@ function renderPanel(tab){
   }
   if(tab==='log') renderFavorites();
   if(tab==='skilling') renderSkilling();
+  if(tab==='maps') renderMaps();
   if(tab==='marketplace') renderMarketplace();
   if(tab==='leaderboard') renderLeaderboard();
   if(tab==='moderation') renderModerationPanel();
@@ -8551,6 +8767,7 @@ function renderPanel(tab){
     renderAdminPaymentHints();
     renderAdminOverview();
     renderAdminLiveDashboard();
+    renderAdminTeleportList();
     populateAdminRoleSuggestions();
     renderAdminRoleTarget();
   }
@@ -8678,6 +8895,7 @@ function render(){
   renderDashboard();
   renderStatsDashboard();
   renderMarketplace();
+  renderMaps();
   renderLeaderboard();
   renderAdSlots();
   updateAuthUI();

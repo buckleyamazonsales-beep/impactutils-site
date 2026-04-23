@@ -131,6 +131,30 @@ function impact_community_normalize_leaderboard($row) {
     ];
 }
 
+function impact_community_normalize_teleport($row) {
+    if (!is_array($row)) {
+        $row = [];
+    }
+    $id = trim((string)($row['id'] ?? ''));
+    $category = trim((string)($row['category'] ?? 'General')) ?: 'General';
+    $name = trim((string)($row['name'] ?? ''));
+    $path = trim((string)($row['path'] ?? 'Teleport Tree'));
+    return [
+        'id' => $id !== '' ? $id : uniqid('tele-', true),
+        'category' => $category,
+        'name' => $name,
+        'path' => $path !== '' ? $path : 'Teleport Tree',
+        'use_case' => trim((string)($row['use_case'] ?? '')),
+        'requirements' => trim((string)($row['requirements'] ?? '')),
+        'risk' => trim((string)($row['risk'] ?? 'Safe')) ?: 'Safe',
+        'gear' => trim((string)($row['gear'] ?? '')),
+        'notes' => trim((string)($row['notes'] ?? '')),
+        'verified' => !empty($row['verified']),
+        'updated_at' => (int)($row['updated_at'] ?? round(microtime(true) * 1000)),
+        'updated_by' => trim((string)($row['updated_by'] ?? '')),
+    ];
+}
+
 function impact_community_normalize_state($state) {
     if (!is_array($state)) {
         $state = [];
@@ -190,12 +214,25 @@ function impact_community_normalize_state($state) {
         }
     }
 
+    $teleports = [];
+    foreach (($state['teleports'] ?? []) as $row) {
+        $normalized = impact_community_normalize_teleport($row);
+        if ($normalized['name'] !== '') {
+            $teleports[] = $normalized;
+        }
+    }
+    usort($teleports, static function ($a, $b) {
+        $cat = strcmp(strtolower((string)$a['category']), strtolower((string)$b['category']));
+        return $cat !== 0 ? $cat : strcmp(strtolower((string)$a['name']), strtolower((string)$b['name']));
+    });
+
     return [
         'marketplace_listings' => array_values($listings),
         'tickets' => array_values($tickets),
         'user_sessions' => $sessions,
         'audit_log' => $audit,
         'leaderboard' => array_values($leaderboard),
+        'teleports' => array_values($teleports),
     ];
 }
 
@@ -404,6 +441,45 @@ if ($action === '') {
     if ($action === 'log_audit') {
         $entry = impact_community_normalize_audit($payload['entry'] ?? []);
         impact_community_add_audit($state, $entry['type'], $entry['label'], $entry['actor'], $entry['target']);
+        return;
+    }
+
+    if ($action === 'save_teleport') {
+        $teleport = impact_community_normalize_teleport($payload['teleport'] ?? []);
+        if ($teleport['name'] === '') {
+            throw new RuntimeException('Teleport requires a destination name.');
+        }
+        if (empty($state['teleports']) || !is_array($state['teleports'])) {
+            $state['teleports'] = [];
+        }
+        $next = [];
+        foreach ($state['teleports'] as $existing) {
+            $normalized = impact_community_normalize_teleport($existing);
+            if ($normalized['id'] !== $teleport['id']) {
+                $next[] = $normalized;
+            }
+        }
+        $next[] = $teleport;
+        $state['teleports'] = $next;
+        impact_community_add_audit($state, 'maps', 'Saved teleport destination', (string)($payload['actor_display'] ?? 'Admin'), $teleport['name']);
+        return;
+    }
+
+    if ($action === 'delete_teleport') {
+        $id = trim((string)($payload['teleport_id'] ?? ''));
+        if ($id === '') {
+            throw new RuntimeException('Teleport ID is required.');
+        }
+        $removedName = '';
+        $state['teleports'] = array_values(array_filter(($state['teleports'] ?? []), static function ($existing) use ($id, &$removedName) {
+            $normalized = impact_community_normalize_teleport($existing);
+            if ($normalized['id'] === $id) {
+                $removedName = $normalized['name'];
+                return false;
+            }
+            return true;
+        }));
+        impact_community_add_audit($state, 'maps', 'Deleted teleport destination', (string)($payload['actor_display'] ?? 'Admin'), $removedName);
         return;
     }
 
