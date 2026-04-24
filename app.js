@@ -311,6 +311,248 @@ const COLLECTION_LOG_DATA = {
   ]
 };
 
+const doomCollectionEntry = COLLECTION_LOG_DATA.bosses.find(entry => entry.id === 'doom-of-mokhaiotl');
+if (doomCollectionEntry) {
+  doomCollectionEntry.items = ['Avernic thread', 'Confliction gloves', 'Doom weapon piece', 'Doom armor piece', 'Doom sigil', 'Doom pet'];
+}
+
+COLLECTION_LOG_DATA.bosses.push(
+  {
+    id: 'alchemical-hydra',
+    name: 'Alchemical Hydra',
+    area: 'Karuulm Dungeon',
+    note: 'Hydra uniques, jar, and pet progress.',
+    map: '',
+    slayer: '',
+    items: ["Hydra's claw", 'Hydra leather', 'Hydra tail', 'Jar of chemicals', 'Ikkle hydra']
+  },
+  {
+    id: 'amoxliatl',
+    name: 'Amoxliatl',
+    area: 'Boss Encounter',
+    note: 'Impact custom boss tracker.',
+    map: 'Amoxliatl',
+    slayer: 'Amoxliatl',
+    items: ['Amoxliatl fang', 'Amoxliatl hide', 'Amoxliatl eye', 'Amoxliatl pet']
+  },
+  {
+    id: 'araxxor',
+    name: 'Araxxor',
+    area: 'Morytania Spider Cave',
+    note: 'Araxxor uniques and pet progress.',
+    map: 'Morytania Spider Cave',
+    slayer: 'Araxxor',
+    items: ['Araxyte fang', 'Noxious halberd', 'Amulet of rancour', 'Jar of venom', 'Araxxor pet']
+  },
+  {
+    id: 'basilisk-knights',
+    name: 'Basilisk Knights',
+    area: 'Jormungand Prison',
+    note: 'Jaw tracker for basilisk knight tasks.',
+    map: 'Jormungand Prison',
+    slayer: '',
+    items: ['Basilisk jaw']
+  },
+  {
+    id: 'callisto',
+    name: 'Callisto',
+    area: 'Deep Wilderness',
+    note: 'Wilderness boss uniques and voidwaker progress.',
+    map: 'Callisto',
+    slayer: 'Callisto',
+    items: ['Tyrannical ring', 'Dragon pickaxe', 'Voidwaker hilt', 'Callisto cub']
+  },
+  {
+    id: 'cerberus',
+    name: 'Cerberus',
+    area: 'Taverley Dungeon',
+    note: 'Crystal trio and Hellpuppy tracker.',
+    map: 'Taverley Dungeon',
+    slayer: 'Cerberus',
+    items: ['Primordial crystal', 'Pegasian crystal', 'Eternal crystal', 'Smouldering stone', 'Hellpuppy']
+  },
+  {
+    id: 'chaos-fanatic',
+    name: 'Chaos Fanatic',
+    area: 'Chaos Temple',
+    note: 'Fast wilderness shard tracker.',
+    map: 'Chaos Temple',
+    slayer: 'Chaos Fanatic',
+    items: ['Odium shard 1', 'Malediction shard 1', 'Ancient staff', 'Dragon pickaxe']
+  },
+  {
+    id: 'leviathan',
+    name: 'Leviathan',
+    area: 'Scar',
+    note: 'Vestige, ingot, and Virtus progress.',
+    map: 'Leviathan',
+    slayer: 'Leviathan',
+    items: ['Venator vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'The leviathan lure']
+  },
+  {
+    id: 'moons-of-peril',
+    name: 'Moons of Peril',
+    area: 'Perilous Moons',
+    note: 'Moon armor and weapon set tracker.',
+    map: '',
+    slayer: '',
+    items: ['Blood moon helm', 'Blood moon chestplate', 'Blood moon tassets', 'Blue moon helm', 'Blue moon spear', 'Eclipse moon helm', 'Eclipse moon chestplate']
+  },
+  {
+    id: 'nex',
+    name: 'Nex',
+    area: 'God Wars Dungeon',
+    note: 'Torva, horn, and crossbow tracker.',
+    map: 'Godwars',
+    slayer: 'Nex',
+    items: ['Torva full helm', 'Torva platebody', 'Torva platelegs', 'Nihil horn', 'Zaryte vambraces', 'Zaryte crossbow', 'Ancient hilt', 'Nexling']
+  },
+  {
+    id: 'nightmare-of-ashihama',
+    name: 'Nightmare of Ashihama',
+    area: 'Slepe',
+    note: 'Inquisitor and orb tracker.',
+    map: '',
+    slayer: '',
+    items: ["Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt", 'Nightmare staff', 'Volatile orb', 'Harmonised orb', 'Eldritch orb', 'Little nightmare']
+  },
+  {
+    id: 'phantom-muspah',
+    name: 'Phantom Muspah',
+    area: 'Ancient Prison',
+    note: 'Shard and icon tracker.',
+    map: 'Phantom Muspah',
+    slayer: 'Phantom Muspah',
+    items: ['Venator shard', 'Ancient icon', 'Frozen cache', 'Muphin']
+  },
+  {
+    id: 'royal-titans',
+    name: 'Royal Titans',
+    area: 'Boss Encounter',
+    note: 'Impact custom boss tracker.',
+    map: '',
+    slayer: '',
+    items: ['Royal titans crown', 'Royal titans plate', 'Royal titans relic', 'Royal titans pet']
+  },
+  {
+    id: 'sarachnis',
+    name: 'Sarachnis',
+    area: 'Forthos Dungeon',
+    note: 'Spider boss uniques and pet progress.',
+    map: '',
+    slayer: '',
+    items: ['Giant egg sac(full)', 'Sarachnis cudgel', 'Jar of eyes', 'Sraracha']
+  },
+  {
+    id: 'scorpia',
+    name: 'Scorpia',
+    area: 'Deep Wilderness',
+    note: 'Shard tracker with pet support.',
+    map: '',
+    slayer: '',
+    items: ['Odium shard 3', 'Malediction shard 3', "Scorpia's offspring"]
+  },
+  {
+    id: 'scurrius',
+    name: 'Scurrius',
+    area: 'Varrock Sewers',
+    note: 'Rat king spine and pet tracker.',
+    map: '',
+    slayer: '',
+    items: ["Scurrius' spine", 'Scurrius pet']
+  },
+  {
+    id: 'skotizo',
+    name: 'Skotizo',
+    area: 'Catacombs',
+    note: 'Totem boss uniques and pet progress.',
+    map: 'Catacombs',
+    slayer: 'Skotizo',
+    items: ['Dark claw', 'Dark totem', 'Uncut onyx', 'Jar of darkness', 'Skotos']
+  },
+  {
+    id: 'tormented-demons',
+    name: 'Tormented Demons',
+    area: 'Catacombs',
+    note: 'Demonbane unique tracker.',
+    map: 'Catacombs',
+    slayer: '',
+    items: ['Tormented synapse', 'Burning claw', 'Bone claws']
+  },
+  {
+    id: 'vardorvis',
+    name: 'Vardorvis',
+    area: 'Stranglewood',
+    note: 'Vestige, ingot, and Virtus progress.',
+    map: 'Vardorvis',
+    slayer: 'Vardovis',
+    items: ['Ultor vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Butch']
+  },
+  {
+    id: 'venenatis',
+    name: 'Venenatis',
+    area: 'Deep Wilderness',
+    note: 'Spider boss voidwaker and pet tracker.',
+    map: '',
+    slayer: '',
+    items: ['Treasonous ring', 'Dragon pickaxe', 'Voidwaker gem', 'Venenatis spiderling']
+  },
+  {
+    id: 'vetion',
+    name: "Vet'ion",
+    area: 'Deep Wilderness',
+    note: 'Vetion ring, voidwaker, and pet tracker.',
+    map: 'Revenants',
+    slayer: "Vet'ion",
+    items: ['Ring of the gods', 'Dragon pickaxe', 'Voidwaker blade', "Vet'ion jr."]
+  },
+  {
+    id: 'vorkath',
+    name: 'Vorkath',
+    area: 'Ungael',
+    note: 'Visage and head tracker with pet support.',
+    map: 'Vorkath',
+    slayer: 'Vorkath',
+    items: ["Vorkath's head", 'Draconic visage', 'Skeletal visage', 'Jar of decay', 'Vorki']
+  },
+  {
+    id: 'whisperer',
+    name: 'The Whisperer',
+    area: 'Lassar Undercity',
+    note: 'Bellator, Virtus, and siren staff tracker.',
+    map: 'The Whisperer',
+    slayer: 'Whisperer',
+    items: ['Bellator vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', "Siren's staff", 'Whisperer pet']
+  },
+  {
+    id: 'xamphur',
+    name: 'Xamphur',
+    area: 'Boss Encounter',
+    note: 'Impact custom boss tracker.',
+    map: 'Xamphur',
+    slayer: 'Xamphur',
+    items: ['Xamphur staff', 'Xamphur sigil', 'Xamphur relic', 'Xamphur pet']
+  },
+  {
+    id: 'yama',
+    name: 'Yama',
+    area: 'Boss Encounter',
+    note: 'Endgame Impact boss tracker.',
+    map: 'Yama',
+    slayer: 'Yama',
+    items: ['Oathplate helm', 'Oathplate platebody', 'Oathplate platelegs', 'Yama contract', 'Yama pet']
+  },
+  {
+    id: 'zulrah',
+    name: 'Zulrah',
+    area: 'Zul-Andra',
+    note: 'Fang, visage, and jar tracker.',
+    map: 'Zulrah',
+    slayer: 'Zulrah',
+    items: ['Tanzanite fang', 'Magic fang', 'Serpentine visage', 'Jar of swamp', 'Pet snakeling']
+  }
+);
+
 const COLLECTION_CATEGORY_LABELS = {
   bosses: 'Bosses',
   raids: 'Raids',
@@ -989,7 +1231,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.24.49';
+const SITE_VERSION = '2026.04.24.50';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
