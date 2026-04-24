@@ -285,6 +285,9 @@
         <div class="nav-item" onclick="switchTab('maps')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3zm0 0V3m6 18V6"/></svg>Maps
         </div>
+        <div class="nav-item" onclick="switchTab('collection')">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-6 4h4"/></svg>Collection
+        </div>
         <div class="nav-item" onclick="switchTab('slayer')">
           <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.868v4.264a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Slayer
         </div>
@@ -953,6 +956,47 @@
           <div id="maps-destination-list" class="maps-destination-list"></div>
         </section>
         <section id="maps-detail-panel" class="maps-detail-panel"></section>
+      </div>
+    </div>
+
+    <div id="panel-collection" class="panel">
+      <div class="page-header collection-header">
+        <div>
+          <div class="page-title">Collection Log</div>
+          <div class="page-subtitle">Compact boss and raid unique tracking that fits the ImpactUtils layout instead of feeling like a separate website.</div>
+        </div>
+      </div>
+
+      <div class="collection-toolbar-card card">
+        <div>
+          <div class="card-title">Log Browser</div>
+          <div class="admin-card-copy">Search the supported logs, track KC, save quick notes, and jump straight into Maps or Slayer when an encounter is linked.</div>
+        </div>
+        <div class="collection-toolbar">
+          <input type="text" id="collection-search" placeholder="Search bosses, raids, items..." oninput="renderCollectionLogTracker()">
+          <select id="collection-category" onchange="onCollectionCategoryChange()"></select>
+          <label class="collection-toggle-inline">
+            <input type="checkbox" id="collection-hide-complete" onchange="renderCollectionLogTracker()">
+            <span>Hide complete</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="collection-summary-grid" id="collection-summary-grid"></div>
+
+      <div class="collection-shell">
+        <aside class="collection-list-card card">
+          <div class="collection-list-header">
+            <div>
+              <div class="maps-mini-heading">Encounters</div>
+              <strong id="collection-count">0 logs</strong>
+            </div>
+            <span>Impact board</span>
+          </div>
+          <div id="collection-list" class="collection-list"></div>
+        </aside>
+
+        <section id="collection-detail" class="collection-detail-panel"></section>
       </div>
     </div>
 

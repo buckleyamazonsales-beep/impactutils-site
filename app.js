@@ -149,6 +149,228 @@ const SLAYER_MAP_LINKS = {
   'Zulrah': ['Zulrah']
 };
 
+const COLLECTION_LOG_DATA = {
+  bosses: [
+    {
+      id: 'general-graardor',
+      name: 'General Graardor',
+      area: 'God Wars Dungeon',
+      note: 'Bandos room uniques and shard tracking.',
+      map: 'Godwars',
+      slayer: '',
+      items: ['Bandos chestplate', 'Bandos tassets', 'Bandos boots', 'Bandos hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet general graardor']
+    },
+    {
+      id: 'commander-zilyana',
+      name: 'Commander Zilyana',
+      area: 'God Wars Dungeon',
+      note: 'Saradomin room drops and hilt progress.',
+      map: 'Godwars',
+      slayer: '',
+      items: ['Armadyl crossbow', 'Saradomin sword', "Saradomin's light", 'Saradomin hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet zilyana']
+    },
+    {
+      id: 'kreearra',
+      name: "Kree'arra",
+      area: 'God Wars Dungeon',
+      note: 'Armadyl armor set and hilt progress.',
+      map: 'Godwars',
+      slayer: '',
+      items: ['Armadyl helmet', 'Armadyl chestplate', 'Armadyl chainskirt', 'Armadyl hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet kree'arra"]
+    },
+    {
+      id: 'kril-tsutsaroth',
+      name: "K'ril Tsutsaroth",
+      area: 'God Wars Dungeon',
+      note: 'Zamorak spear and steam battlestaff log.',
+      map: 'Godwars',
+      slayer: '',
+      items: ['Zamorakian spear', 'Staff of the dead', 'Steam battlestaff', 'Zamorak hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet k'ril tsutsaroth"]
+    },
+    {
+      id: 'corporeal-beast',
+      name: 'Corporeal Beast',
+      area: 'Corp Cave',
+      note: 'Sigils, elixir, and pet progress.',
+      map: 'Corporeal Beast',
+      slayer: 'Corporeal Beast',
+      items: ['Spectral sigil', 'Arcane sigil', 'Elysian sigil', 'Holy elixir', 'Spirit shield', 'Jar of spirits', 'Pet dark core']
+    },
+    {
+      id: 'king-black-dragon',
+      name: 'King Black Dragon',
+      area: 'KBD Lair',
+      note: 'Classic wilderness boss log with visage and heads.',
+      map: 'Ferox Enclave',
+      slayer: 'King Black Dragon',
+      items: ['Dragon pickaxe', 'Dragon axe', 'Draconic visage', 'Kbd heads', 'Prince black dragon']
+    },
+    {
+      id: 'kraken',
+      name: 'Kraken',
+      area: 'Kraken Cove',
+      note: 'Fast slayer boss unique tracker.',
+      map: 'Kraken Cove',
+      slayer: 'Kraken',
+      items: ['Kraken tentacle', 'Trident of the seas', 'Jar of dirt', 'Pet kraken', 'Mystic robe top', 'Mystic robe bottom']
+    },
+    {
+      id: 'duke-sucellus',
+      name: 'Duke Sucellus',
+      area: 'Lassar Undercity',
+      note: 'Vestige, Virtus, and ingot tracking.',
+      map: 'Duke Sucellus',
+      slayer: 'Duke Sucellus',
+      items: ['Magus vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Eye of the duke']
+    },
+    {
+      id: 'crazy-archaeologist',
+      name: 'Crazy Archaeologist',
+      area: 'Forgotten Cemetery',
+      note: 'Quick shard and fedora checkoff.',
+      map: 'Graveyard Of Shadows',
+      slayer: 'Crazy Archaeologist',
+      items: ['Fedora', 'Odium shard 2', 'Malediction shard 2', 'Dragon pickaxe']
+    },
+    {
+      id: 'doom-of-mokhaiotl',
+      name: 'Doom of Mokhaiotl',
+      area: 'Impact Boss',
+      note: 'Compact tracker for the Doom unique set.',
+      map: 'Doom of Mokhaiotl',
+      slayer: 'Doom of Mokhaiotl',
+      items: ['Doom weapon piece', 'Doom armor piece', 'Doom sigil', 'Doom pet']
+    }
+  ],
+  raids: [
+    {
+      id: 'chambers-of-xeric',
+      name: 'Chambers of Xeric',
+      area: 'Raid',
+      note: 'Core mega-rare and prayer scroll tracking.',
+      map: '',
+      slayer: '',
+      items: ['Twisted bow', 'Kodai insignia', 'Dragon hunter crossbow', 'Ancestral hat', 'Ancestral robe top', 'Ancestral robe bottom', 'Dexterous prayer scroll', 'Arcane prayer scroll', 'Olmlet']
+    },
+    {
+      id: 'theatre-of-blood',
+      name: 'Theatre of Blood',
+      area: 'Raid',
+      note: 'Scythe, rapier, hilt, and pet progress.',
+      map: '',
+      slayer: '',
+      items: ['Scythe of vitur', 'Ghrazi rapier', 'Sanguinesti staff', 'Avernic defender hilt', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', "Lil' zik"]
+    },
+    {
+      id: 'tombs-of-amascut',
+      name: 'Tombs of Amascut',
+      area: 'Raid',
+      note: 'TOA mega-rare and Masori checkoff.',
+      map: '',
+      slayer: '',
+      items: ["Tumeken's shadow", "Osmumten's fang", 'Lightbearer', "Elidinis' ward", 'Masori mask', 'Masori body', 'Masori chaps', "Tumeken's guardian"]
+    }
+  ],
+  other: [
+    {
+      id: 'barrows',
+      name: 'Barrows',
+      area: 'Morytania',
+      note: 'Brother set tracking in one compact card.',
+      map: 'Barrows',
+      slayer: 'Barrows',
+      items: ["Ahrim's robetop", "Dharok's greataxe", "Guthan's warspear", "Karil's leathertop", "Torag's hammers", "Verac's flail"]
+    },
+    {
+      id: 'dagannoth-kings',
+      name: 'Dagannoth Kings',
+      area: 'Waterbirth Dungeon',
+      note: 'Ring and axe tracker for DK sessions.',
+      map: '',
+      slayer: '',
+      items: ['Berserker ring', 'Seers ring', 'Warrior ring', 'Archers ring', 'Dragon axe', 'Mud battlestaff']
+    },
+    {
+      id: 'demonic-gorillas',
+      name: 'Demonic Gorillas',
+      area: 'Crash Site Cavern',
+      note: 'Zenyte and ballista piece tracker.',
+      map: '',
+      slayer: '',
+      items: ['Zenyte shard', 'Ballista limbs', 'Ballista spring', 'Monkey tail', 'Light frame', 'Heavy frame']
+    },
+    {
+      id: 'hueycoatl',
+      name: 'Hueycoatl',
+      area: 'Boss Encounter',
+      note: 'Small log card for Huey uniques.',
+      map: '',
+      slayer: '',
+      items: ['Huey unique 1', 'Huey unique 2', 'Huey unique 3', 'Huey pet']
+    }
+  ]
+};
+
+const COLLECTION_CATEGORY_LABELS = {
+  bosses: 'Bosses',
+  raids: 'Raids',
+  other: 'Other'
+};
+
+const COLLECTION_ITEM_IMAGE_IDS = {
+  'Bandos chestplate': 11832,
+  'Bandos tassets': 11834,
+  'Bandos boots': 11836,
+  'Godsword shard 1': 11794,
+  'Godsword shard 2': 11796,
+  'Godsword shard 3': 11798,
+  'Armadyl crossbow': 11785,
+  'Saradomin sword': 11838,
+  'Armadyl helmet': 11826,
+  'Armadyl chestplate': 11828,
+  'Armadyl chainskirt': 11830,
+  'Zamorakian spear': 11824,
+  'Staff of the dead': 11791,
+  'Dragon pickaxe': 11920,
+  'Dragon axe': 6739,
+  'Draconic visage': 11286,
+  'Kbd heads': 11279,
+  'Kraken tentacle': 12004,
+  'Trident of the seas': 11905,
+  'Jar of dirt': 12007,
+  'Twisted bow': 20997,
+  'Dragon hunter crossbow': 21012,
+  'Ancestral hat': 21018,
+  'Ancestral robe top': 21021,
+  'Ancestral robe bottom': 21024,
+  'Dexterous prayer scroll': 21079,
+  'Scythe of vitur': 22486,
+  'Ghrazi rapier': 22324,
+  'Sanguinesti staff': 22481,
+  'Avernic defender hilt': 22477,
+  "Tumeken's shadow": 27277,
+  "Osmumten's fang": 26219,
+  'Lightbearer': 25975,
+  "Elidinis' ward": 25985,
+  "Ahrim's robetop": 4708,
+  "Dharok's greataxe": 4718,
+  "Guthan's warspear": 4726,
+  "Karil's leathertop": 4736,
+  "Torag's hammers": 4747,
+  "Verac's flail": 4755,
+  'Berserker ring': 6737,
+  'Seers ring': 6731,
+  'Warrior ring': 6735,
+  'Archers ring': 6733,
+  'Mud battlestaff': 6562,
+  'Zenyte shard': 19529,
+  'Ballista limbs': 19592,
+  'Ballista spring': 19589,
+  'Monkey tail': 19610,
+  'Light frame': 19586,
+  'Heavy frame': 19589
+};
+
 const IMPACT_SKILLING_GUIDES = [
   { name: "Agility", icon: "🏃", wiki: "https://impactmmo.wiki/Agility", focus: "Fastest route: Gnome Course into Wilderness Course.", routes: [
     { from: 1, to: 52, method: "Gnome Course", detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
@@ -756,7 +978,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.22.4';
+const SITE_VERSION = '2026.04.24.48';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -1454,6 +1676,13 @@ function loadState(){
     leaderboard: [],
     teleports: [],
     tickets: [],
+    collection_log: {},
+    collection_log_ui:{
+      category:'bosses',
+      selected_id:'general-graardor',
+      search:'',
+      hide_complete:false
+    },
     session_start_gp: 0
   };
 }
@@ -2718,6 +2947,247 @@ function renderMaps() {
       ${isAdminUser() && !String(selected.id || '').startsWith('impact-') ? `<button class="btn-sm" onclick='editTeleportFromAdmin(${inlineJsString(selected.id)});switchTab("admin")'>Edit in Admin</button>` : ''}
     </div>
   ` : '';
+}
+
+function getAllCollectionEncounters() {
+  return Object.entries(COLLECTION_LOG_DATA).flatMap(([category, rows]) => rows.map(row => ({ ...row, category })));
+}
+
+function getCollectionEncounterById(id) {
+  return getAllCollectionEncounters().find(row => row.id === id) || null;
+}
+
+function getCollectionItemImageUrl(itemName, large = false) {
+  const id = COLLECTION_ITEM_IMAGE_IDS[itemName];
+  if (!id) return '';
+  return `https://secure.runescape.com/m=itemdb_oldschool/${large ? 'obj_big' : 'obj_sprite'}.gif?id=${id}`;
+}
+
+function getCollectionEntry(encounterId) {
+  state.collection_log = state.collection_log || {};
+  if (!state.collection_log[encounterId]) {
+    state.collection_log[encounterId] = { kc: 0, notes: '', items: {} };
+  }
+  return state.collection_log[encounterId];
+}
+
+function getCollectionProgress(encounter) {
+  const entry = getCollectionEntry(encounter.id);
+  const total = encounter.items.length;
+  const obtained = encounter.items.filter(item => Number(entry.items?.[item] || 0) > 0).length;
+  return {
+    total,
+    obtained,
+    percent: total ? Math.round((obtained / total) * 100) : 0,
+    kc: Number(entry.kc) || 0,
+    complete: total > 0 && obtained >= total
+  };
+}
+
+function getCollectionSummary() {
+  return getAllCollectionEncounters().reduce((acc, encounter) => {
+    const progress = getCollectionProgress(encounter);
+    acc.totalItems += progress.total;
+    acc.obtainedItems += progress.obtained;
+    acc.totalKc += progress.kc;
+    acc.completedLogs += progress.complete ? 1 : 0;
+    return acc;
+  }, {
+    totalItems: 0,
+    obtainedItems: 0,
+    totalKc: 0,
+    completedLogs: 0
+  });
+}
+
+function getVisibleCollectionEncounters() {
+  const category = state.collection_log_ui?.category || 'bosses';
+  const search = String(state.collection_log_ui?.search || '').trim().toLowerCase();
+  const hideComplete = Boolean(state.collection_log_ui?.hide_complete);
+  return (COLLECTION_LOG_DATA[category] || []).filter(encounter => {
+    const progress = getCollectionProgress(encounter);
+    if (hideComplete && progress.complete) return false;
+    if (!search) return true;
+    const hay = [encounter.name, encounter.area, encounter.note, ...encounter.items].join(' ').toLowerCase();
+    return hay.includes(search);
+  });
+}
+
+function onCollectionCategoryChange() {
+  const select = document.getElementById('collection-category');
+  state.collection_log_ui = state.collection_log_ui || {};
+  state.collection_log_ui.category = select?.value || 'bosses';
+  const rows = getVisibleCollectionEncounters();
+  state.collection_log_ui.selected_id = rows[0]?.id || (COLLECTION_LOG_DATA[state.collection_log_ui.category]?.[0]?.id || '');
+  saveState();
+  renderCollectionLogTracker();
+}
+
+function selectCollectionEncounter(id) {
+  state.collection_log_ui = state.collection_log_ui || {};
+  state.collection_log_ui.selected_id = id || '';
+  saveState();
+  renderCollectionLogTracker();
+}
+
+function updateCollectionKc(encounterId, value) {
+  const entry = getCollectionEntry(encounterId);
+  entry.kc = Math.max(Number(value) || 0, 0);
+  saveState();
+  renderCollectionLogTracker();
+}
+
+function updateCollectionNotes(encounterId, value) {
+  const entry = getCollectionEntry(encounterId);
+  entry.notes = String(value || '').slice(0, 1200);
+  saveState();
+}
+
+function adjustCollectionItem(encounterId, itemName, delta) {
+  const entry = getCollectionEntry(encounterId);
+  const current = Math.max(Number(entry.items?.[itemName]) || 0, 0);
+  entry.items[itemName] = Math.max(current + delta, 0);
+  saveState();
+  renderCollectionLogTracker();
+}
+
+function openSlayerTaskFromCollection(taskName) {
+  if (!taskName) return;
+  const search = document.getElementById('slayer-task-search');
+  const select = document.getElementById('slayer-task');
+  if (search) search.value = taskName;
+  populateSlayerTaskSelect();
+  if (select) {
+    const match = [...select.options].find(option => normalizeMapName(option.value) === normalizeMapName(taskName));
+    if (match) select.value = match.value;
+  }
+  onSlayerTaskChange();
+  switchTab('slayer');
+}
+
+function renderCollectionLogTracker() {
+  const searchInput = document.getElementById('collection-search');
+  const categorySelect = document.getElementById('collection-category');
+  const hideToggle = document.getElementById('collection-hide-complete');
+  const summaryGrid = document.getElementById('collection-summary-grid');
+  const list = document.getElementById('collection-list');
+  const detail = document.getElementById('collection-detail');
+  const count = document.getElementById('collection-count');
+  if (!searchInput || !categorySelect || !hideToggle || !summaryGrid || !list || !detail) return;
+
+  state.collection_log_ui = state.collection_log_ui || { category:'bosses', selected_id:'general-graardor', search:'', hide_complete:false };
+  searchInput.value = state.collection_log_ui.search || '';
+  hideToggle.checked = Boolean(state.collection_log_ui.hide_complete);
+  categorySelect.innerHTML = Object.entries(COLLECTION_CATEGORY_LABELS).map(([key, label]) =>
+    `<option value="${escapeHtml(key)}"${state.collection_log_ui.category === key ? ' selected' : ''}>${escapeHtml(label)}</option>`
+  ).join('');
+
+  state.collection_log_ui.search = searchInput.value || '';
+  state.collection_log_ui.hide_complete = Boolean(hideToggle.checked);
+
+  const rows = getVisibleCollectionEncounters();
+  if (!rows.some(row => row.id === state.collection_log_ui.selected_id)) {
+    state.collection_log_ui.selected_id = rows[0]?.id || (COLLECTION_LOG_DATA[state.collection_log_ui.category]?.[0]?.id || '');
+  }
+  const selected = getCollectionEncounterById(state.collection_log_ui.selected_id);
+  const summary = getCollectionSummary();
+  const percent = summary.totalItems ? Math.round((summary.obtainedItems / summary.totalItems) * 100) : 0;
+  const categoryRows = COLLECTION_LOG_DATA[state.collection_log_ui.category] || [];
+  const categoryCompleted = categoryRows.filter(encounter => getCollectionProgress(encounter).complete).length;
+
+  summaryGrid.innerHTML = `
+    <div class="collection-summary-card"><span>Uniques tracked</span><strong>${summary.obtainedItems}/${summary.totalItems}</strong><small>${percent}% of the full board is checked off.</small></div>
+    <div class="collection-summary-card"><span>Completed logs</span><strong>${summary.completedLogs}</strong><small>${getAllCollectionEncounters().length} total logs are supported right now.</small></div>
+    <div class="collection-summary-card"><span>Total KC</span><strong>${summary.totalKc.toLocaleString()}</strong><small>${summary.totalKc.toLocaleString()} total boss or raid clears logged.</small></div>
+    <div class="collection-summary-card"><span>Active category</span><strong>${categoryCompleted}/${categoryRows.length}</strong><small>${COLLECTION_CATEGORY_LABELS[state.collection_log_ui.category]} complete in this filter.</small></div>
+  `;
+
+  if (count) count.textContent = `${rows.length} log${rows.length === 1 ? '' : 's'}`;
+  if (!rows.length) {
+    list.innerHTML = '<div class="empty compact">No collection logs match that filter.</div>';
+    detail.innerHTML = '<div class="collection-empty">Try another category or search term.</div>';
+    saveState();
+    return;
+  }
+
+  list.innerHTML = rows.map(encounter => {
+    const progress = getCollectionProgress(encounter);
+    return `
+      <button class="collection-row ${encounter.id === state.collection_log_ui.selected_id ? 'active' : ''}" onclick='selectCollectionEncounter(${inlineJsString(encounter.id)})'>
+        <div class="collection-row-top">
+          <div>
+            <span>${escapeHtml(COLLECTION_CATEGORY_LABELS[encounter.category])}</span>
+            <strong>${escapeHtml(encounter.name)}</strong>
+          </div>
+          <div class="collection-progress-pill">${progress.obtained}/${progress.total}</div>
+        </div>
+        <small>${escapeHtml(encounter.area)} • ${progress.kc.toLocaleString()} KC</small>
+        <div class="collection-progress-track"><span style="width:${progress.percent}%;"></span></div>
+      </button>
+    `;
+  }).join('');
+
+  const encounter = selected || rows[0];
+  const entry = getCollectionEntry(encounter.id);
+  const progress = getCollectionProgress(encounter);
+  const quickLinks = [
+    encounter.map ? `<button class="btn" onclick='openMapsForDestination(${inlineJsString(encounter.map)})'>Open Map</button>` : '',
+    encounter.slayer ? `<button class="btn" onclick='openSlayerTaskFromCollection(${inlineJsString(encounter.slayer)})'>Open Slayer</button>` : ''
+  ].filter(Boolean).join('');
+
+  detail.innerHTML = `
+    <div class="collection-detail-card">
+      <div class="collection-detail-top">
+        <div>
+          <div class="collection-kicker">${escapeHtml(COLLECTION_CATEGORY_LABELS[encounter.category])}</div>
+          <div class="collection-detail-title">${escapeHtml(encounter.name)}</div>
+          <div class="collection-detail-copy">${escapeHtml(encounter.area)} • ${escapeHtml(encounter.note)}</div>
+        </div>
+        <div class="collection-detail-pill">${progress.obtained}/${progress.total} unique${progress.total === 1 ? '' : 's'}</div>
+      </div>
+
+      <div class="collection-detail-stats">
+        <div class="collection-stat"><span>Completion</span><strong>${progress.percent}%</strong></div>
+        <div class="collection-stat"><span>Kill count</span><strong><input type="number" min="0" value="${Number(entry.kc) || 0}" oninput="updateCollectionKc(${inlineJsString(encounter.id)}, this.value)"></strong></div>
+        <div class="collection-stat"><span>Status</span><strong>${progress.complete ? 'Complete' : 'In Progress'}</strong></div>
+      </div>
+
+      ${quickLinks ? `<div class="collection-quick-links">${quickLinks}</div>` : ''}
+
+      <div class="collection-note-box">
+        <label class="form-label">Notes</label>
+        <textarea oninput="updateCollectionNotes(${inlineJsString(encounter.id)}, this.value)" placeholder="Short route notes, teams, or dry streak reminders...">${escapeHtml(entry.notes || '')}</textarea>
+      </div>
+
+      <div class="collection-items-grid">
+        ${encounter.items.map(itemName => {
+          const countOwned = Math.max(Number(entry.items?.[itemName]) || 0, 0);
+          const imageUrl = getCollectionItemImageUrl(itemName);
+          const initials = itemName.split(' ').map(part => part[0]).join('').slice(0, 3);
+          return `
+            <div class="collection-item-card ${countOwned > 0 ? 'obtained' : ''}">
+              <div class="collection-item-top">
+                <div class="collection-item-identity">
+                  ${imageUrl ? `<img class="collection-item-image" src="${imageUrl}" alt="${escapeHtml(itemName)}">` : `<div class="collection-item-fallback">${escapeHtml(initials)}</div>`}
+                  <div>
+                    <strong>${escapeHtml(itemName)}</strong>
+                    <span>${countOwned > 0 ? 'Logged' : 'Not logged yet'}</span>
+                  </div>
+                </div>
+                <div class="collection-item-count">${countOwned}</div>
+              </div>
+              <div class="collection-item-actions">
+                <button class="btn" onclick='adjustCollectionItem(${inlineJsString(encounter.id)}, ${inlineJsString(itemName)}, -1)'>-1</button>
+                <button class="btn primary" onclick='adjustCollectionItem(${inlineJsString(encounter.id)}, ${inlineJsString(itemName)}, 1)'>Mark Drop</button>
+                <button class="btn" onclick='adjustCollectionItem(${inlineJsString(encounter.id)}, ${inlineJsString(itemName)}, ${-countOwned})'>Clear</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  saveState();
 }
 
 function setTeleportStatus(message = '', tone = 'muted') {
@@ -5629,6 +6099,24 @@ function normalizeState(){
       updated_at: Number(row.updated_at) || Date.now()
     }))
     .filter(row => row.key && row.display);
+  state.collection_log = state.collection_log && typeof state.collection_log === 'object' && !Array.isArray(state.collection_log)
+    ? state.collection_log
+    : {};
+  Object.keys(state.collection_log).forEach(key => {
+    const row = state.collection_log[key];
+    state.collection_log[key] = {
+      kc: Math.max(Number(row?.kc) || 0, 0),
+      notes: String(row?.notes || '').slice(0, 1200),
+      items: row?.items && typeof row.items === 'object' && !Array.isArray(row.items) ? row.items : {}
+    };
+  });
+  state.collection_log_ui = state.collection_log_ui && typeof state.collection_log_ui === 'object' && !Array.isArray(state.collection_log_ui)
+    ? state.collection_log_ui
+    : {};
+  state.collection_log_ui.category = COLLECTION_LOG_DATA[state.collection_log_ui.category] ? state.collection_log_ui.category : 'bosses';
+  state.collection_log_ui.search = String(state.collection_log_ui.search || '');
+  state.collection_log_ui.hide_complete = Boolean(state.collection_log_ui.hide_complete);
+  state.collection_log_ui.selected_id = String(state.collection_log_ui.selected_id || COLLECTION_LOG_DATA.bosses[0].id);
   state.teleports = Array.isArray(state.teleports) ? state.teleports : [];
   state.teleports = state.teleports
     .map(row => ({
@@ -9033,6 +9521,7 @@ function renderPanel(tab){
   if(tab==='log') renderFavorites();
   if(tab==='skilling') renderSkilling();
   if(tab==='maps') renderMaps();
+  if(tab==='collection') renderCollectionLogTracker();
   if(tab==='marketplace') renderMarketplace();
   if(tab==='leaderboard') renderLeaderboard();
   if(tab==='moderation') renderModerationPanel();
@@ -9170,6 +9659,7 @@ function render(){
   renderStatsDashboard();
   renderMarketplace();
   renderMaps();
+  renderCollectionLogTracker();
   renderLeaderboard();
   renderAdSlots();
   updateAuthUI();
