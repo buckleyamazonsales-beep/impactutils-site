@@ -371,6 +371,17 @@ const COLLECTION_ITEM_IMAGE_IDS = {
   'Heavy frame': 19589
 };
 
+const COLLECTION_ITEM_IMAGE_OVERRIDES = {
+  // Reserved for Impact-specific or custom art URLs that do not exist on GE/wiki.
+};
+
+const COLLECTION_ITEM_WIKI_TITLE_OVERRIDES = {
+  'Kbd heads': 'Kbd heads'
+};
+
+const collectionItemImageCache = Object.create(null);
+const collectionItemImagePending = new Set();
+
 const IMPACT_SKILLING_GUIDES = [
   { name: "Agility", icon: "🏃", wiki: "https://impactmmo.wiki/Agility", focus: "Fastest route: Gnome Course into Wilderness Course.", routes: [
     { from: 1, to: 52, method: "Gnome Course", detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
@@ -978,7 +989,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.24.48';
+const SITE_VERSION = '2026.04.24.49';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -2957,10 +2968,49 @@ function getCollectionEncounterById(id) {
   return getAllCollectionEncounters().find(row => row.id === id) || null;
 }
 
+function queueCollectionItemImageLookup(itemName, large = false) {
+  if (!itemName || collectionItemImagePending.has(itemName) || Object.prototype.hasOwnProperty.call(collectionItemImageCache, itemName)) return;
+  const wikiTitle = COLLECTION_ITEM_WIKI_TITLE_OVERRIDES[itemName] || itemName;
+  if (!wikiTitle || typeof fetch !== 'function') {
+    collectionItemImageCache[itemName] = '';
+    return;
+  }
+  collectionItemImagePending.add(itemName);
+  const size = large ? 160 : 96;
+  const apiUrl = `https://oldschool.runescape.wiki/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=${size}&titles=${encodeURIComponent(wikiTitle)}&format=json&origin=*`;
+  fetch(apiUrl)
+    .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+    .then(data => {
+      const pages = Object.values(data?.query?.pages || {});
+      const source = pages.find(page => page?.thumbnail?.source)?.thumbnail?.source || '';
+      collectionItemImageCache[itemName] = source;
+    })
+    .catch(() => {
+      collectionItemImageCache[itemName] = '';
+    })
+    .finally(() => {
+      collectionItemImagePending.delete(itemName);
+      renderCollectionLogTracker();
+    });
+}
+
 function getCollectionItemImageUrl(itemName, large = false) {
+  if (Object.prototype.hasOwnProperty.call(collectionItemImageCache, itemName)) {
+    return collectionItemImageCache[itemName];
+  }
+  const overrideUrl = COLLECTION_ITEM_IMAGE_OVERRIDES[itemName];
+  if (overrideUrl) {
+    collectionItemImageCache[itemName] = overrideUrl;
+    return overrideUrl;
+  }
   const id = COLLECTION_ITEM_IMAGE_IDS[itemName];
-  if (!id) return '';
-  return `https://secure.runescape.com/m=itemdb_oldschool/${large ? 'obj_big' : 'obj_sprite'}.gif?id=${id}`;
+  if (id) {
+    const url = `https://secure.runescape.com/m=itemdb_oldschool/${large ? 'obj_big' : 'obj_sprite'}.gif?id=${id}`;
+    collectionItemImageCache[itemName] = url;
+    return url;
+  }
+  queueCollectionItemImageLookup(itemName, large);
+  return '';
 }
 
 function getCollectionEntry(encounterId) {
