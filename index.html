@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ImpactUtils — impactutils.com</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=2026.04.25.51">
+<link rel="stylesheet" href="./styles.css?v=2026.04.25.52">
 </head>
 <body>
 
@@ -411,6 +411,7 @@
         <div class="dashboard-username-tools">
           <input type="text" id="dashboard-username-input" placeholder="Impact username">
           <button class="btn primary" onclick="fetchHiscores({ sourceId:'dashboard-username-input', statusId:'dashboard-username-status', afterTab:'dashboard' })">Import Stats</button>
+          <button class="btn" onclick="refreshImportedStatsIfNeeded({ force:true, statusId:'dashboard-username-status', silent:false })">Refresh Now</button>
         </div>
         <div id="dashboard-saved-usernames" class="saved-username-list"></div>
         <div id="dashboard-username-status" class="dashboard-username-status"></div>
@@ -956,8 +957,10 @@
             <option value="highest">Highest level first</option>
             <option value="az">A-Z</option>
           </select>
+          <button class="btn" onclick="refreshImportedStatsIfNeeded({ force:true, statusId:'skilling-sync-status', silent:false })">Refresh Stats</button>
           <button class="btn" onclick="switchTab('dashboard')">Set Username</button>
         </div>
+        <div id="skilling-sync-status" class="dashboard-username-status" style="margin-top:12px;"></div>
       </div>
 
       <div class="skilling-grid" id="skilling-grid">
@@ -1728,6 +1731,6 @@
   Netlify (especially custom domain): uncomment so billing + email use serverless functions:
   <script>window.IMPACT_BILLING_FUNCTIONS_BASE='/.netlify/functions';window.IMPACT_VERIFICATION_ENDPOINT='/.netlify/functions/send-verification-email';</script>
 -->
-<script src="./app.js?v=2026.04.25.51"></script>
+<script src="./app.js?v=2026.04.25.52"></script>
 </body>
 </html>

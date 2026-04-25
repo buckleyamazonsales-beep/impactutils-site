@@ -1231,7 +1231,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.25.51';
+const SITE_VERSION = '2026.04.25.52';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -1739,6 +1739,7 @@ const AD_ROTATION_MS = 10000;
 const VOTE_REMINDER_DEFAULT_HOURS = 12;
 const VOTE_REMINDER_MIN_HOURS = 1;
 const VOTE_REMINDER_MAX_HOURS = 72;
+const STATS_REFRESH_MAX_AGE_MS = 2 * 60 * 1000;
 const ROTATING_ADS = {
   sidebar: [
     { tag:'Free tier ad', meta:'Impact utils', title:'Advertise on ImpactUtils', copy:'Small sponsor placements live on the side so the main workflow stays clean for everyone.', cta:'Visit impactutils.com', href:'https://impactutils.com' },
@@ -6556,7 +6557,13 @@ function normalizeState(){
   });
   state.session_start_gp = Number(state.session_start_gp) || 0;
   state.username = state.username || null;
-  state.player_data = state.player_data || null;
+  state.player_data = state.player_data && typeof state.player_data === 'object' ? state.player_data : null;
+  if (state.player_data && (!state.player_data.skills || typeof state.player_data.skills !== 'object')) {
+    state.player_data = null;
+  } else if (state.player_data) {
+    state.player_data.imported_at = state.player_data.imported_at ? String(state.player_data.imported_at) : '';
+    state.player_data.username = state.player_data.username ? String(state.player_data.username) : String(state.username || '');
+  }
   state.banned_users = Array.isArray(state.banned_users) ? state.banned_users : [];
   state.banned_users = state.banned_users
     .map(b => ({
@@ -6802,13 +6809,48 @@ function renderDashboardUsernames() {
       <button class="saved-username-remove" type="button" onclick='removeSavedUsername(${arg})' title="Remove ${escapeHtml(name)}">×</button>
     `}).join('')
     : '<div class="empty compact">No saved usernames yet.</div>';
+  renderStatsSyncStatus();
+}
+
+function getStatsImportedAtMs() {
+  const importedAt = state?.player_data?.imported_at;
+  return importedAt ? new Date(importedAt).getTime() : 0;
+}
+
+function formatStatsSyncedAt(iso) {
+  if (!iso) return 'Never';
+  const ms = new Date(iso).getTime();
+  if (!ms) return 'Never';
+  return new Date(ms).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function renderStatsSyncStatus(statusId = 'dashboard-username-status') {
+  const statusEl = document.getElementById(statusId);
+  if (!statusEl) return;
+  const username = String(state?.username || '').trim();
+  const importedAt = state?.player_data?.imported_at || '';
+  if (!username) {
+    statusEl.innerHTML = '<div class="profit-preview">Set your Impact username, then import stats to sync Goals and Skilling.</div>';
+    return;
+  }
+
+  const importedMs = getStatsImportedAtMs();
+  const ageMs = importedMs ? Math.max(0, Date.now() - importedMs) : 0;
+  const stale = !importedMs || ageMs > STATS_REFRESH_MAX_AGE_MS;
+  const syncedAt = formatStatsSyncedAt(importedAt);
+  statusEl.innerHTML = `<div class="badge ${stale ? 'amber' : 'green'}">${stale ? 'Stats may be stale' : 'Stats synced'}</div><div class="profit-preview" style="margin-top:10px;">Username: ${escapeHtml(username)}${importedAt ? ` · Last sync ${escapeHtml(syncedAt)}` : ' · No successful sync yet'}</div>`;
 }
 
 async function fetchHiscores(options = {}) {
   if (!ensureRegisteredUser('set a username and import stats')) return;
   const sourceId = options.sourceId || 'username-input';
   const statusId = options.statusId || 'hiscores-status';
-  const username = document.getElementById(sourceId)?.value.trim() || '';
+  const username = String(options.username || document.getElementById(sourceId)?.value || state.username || '').trim();
   const statusEl = document.getElementById(statusId);
   if (!username) {
     if (statusEl) statusEl.innerHTML = '<div class="badge red">Enter a username first.</div>';
@@ -6816,14 +6858,22 @@ async function fetchHiscores(options = {}) {
   }
 
   const endpoint = getHiscoresEndpoint(username);
+  const uncachedEndpoint = `${endpoint}${endpoint.includes('?') ? '&' : '?'}_=${Date.now()}`;
   const isLocalPreview = typeof window !== 'undefined' && (
     window.location.protocol === 'file:' ||
     ['localhost', '127.0.0.1'].includes((window.location.hostname || '').toLowerCase())
   );
-  statusEl.innerHTML = `<div class="loading">${isLocalPreview ? 'Fetching stats from local helper...' : 'Fetching account stats...'}</div>`;
+  if (statusEl && !options.silent) {
+    statusEl.innerHTML = `<div class="loading">${isLocalPreview ? 'Fetching stats from local helper...' : 'Fetching account stats...'}</div>`;
+  }
 
   try {
-    const res = await fetch(endpoint);
+    const res = await fetch(uncachedEndpoint, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || `Request failed (${res.status})`);
@@ -6832,16 +6882,24 @@ async function fetchHiscores(options = {}) {
       throw new Error('No skill data was returned for this username.');
     }
 
-    state.player_data = { skills: data.skills };
+    state.player_data = {
+      skills: data.skills,
+      imported_at: new Date().toISOString(),
+      source: data.source || endpoint,
+      username
+    };
     state.username = username;
     state.saved_usernames = [username, ...(state.saved_usernames || []).filter(name => name.toLowerCase() !== username.toLowerCase())].slice(0, 12);
     saveState();
 
-    if(statusEl) statusEl.innerHTML = '<div class="badge green">Username saved and stats imported successfully.</div>';
-    switchTab(options.afterTab || 'goals');
+    if (statusEl && !options.silent) statusEl.innerHTML = '<div class="badge green">Username saved and stats imported successfully.</div>';
+    if (!options.keepTab && !options.silent) switchTab(options.afterTab || 'goals');
+    renderGoals();
     renderSuggestedGoals();
+    renderStatsDashboard();
     renderDashboardUsernames();
     renderSkilling();
+    renderStatsSyncStatus(statusId);
   } catch (err) {
     const fallbackMessage = isLocalPreview
       ? `Stats lookup is not available in local preview mode right now. If you want local testing, run the local helper on ${HISCORES_PROXY_BASE}.`
@@ -6851,6 +6909,22 @@ async function fetchHiscores(options = {}) {
   }
 }
 
+async function refreshImportedStatsIfNeeded(options = {}) {
+  const username = String(options.username || state?.username || '').trim();
+  if (!username) return false;
+  const importedMs = getStatsImportedAtMs();
+  const stale = !importedMs || (Date.now() - importedMs) > (options.maxAgeMs || STATS_REFRESH_MAX_AGE_MS);
+  if (!options.force && !stale) return false;
+  await fetchHiscores({
+    username,
+    sourceId: options.sourceId || 'dashboard-username-input',
+    statusId: options.statusId || 'dashboard-username-status',
+    keepTab: true,
+    silent: options.silent !== false
+  });
+  return true;
+}
+
 function selectSavedUsername(username) {
   const clean = String(username || '').trim();
   if(!clean) return;
@@ -6858,6 +6932,10 @@ function selectSavedUsername(username) {
     const el = document.getElementById(id);
     if(el) el.value = clean;
   });
+  state.username = clean;
+  saveState();
+  renderDashboardUsernames();
+  void refreshImportedStatsIfNeeded({ username: clean, force: true, silent: false });
 }
 
 function removeSavedUsername(username) {
@@ -6869,6 +6947,7 @@ function removeSavedUsername(username) {
   }
   saveState();
   renderDashboardUsernames();
+  renderStatsSyncStatus();
   renderSkilling();
 }
 
@@ -7679,6 +7758,9 @@ async function switchTab(tab){
   document.getElementById('panel-'+tab).classList.add('active');
   if (tab === 'marketplace' || tab === 'leaderboard' || tab === 'maps' || tab === 'moderation' || tab === 'admin') {
     await syncCommunityStateFromServer();
+  }
+  if (['dashboard', 'goals', 'stats', 'skilling'].includes(tab)) {
+    void refreshImportedStatsIfNeeded({ statusId: 'dashboard-username-status', silent: true });
   }
   recalcItemStats();
   if (tab === 'moderation') {
@@ -9227,6 +9309,7 @@ function renderDashboard(){
   const momentumEl = document.getElementById('dashboard-momentum-list');
   const dashboardPlanPill = document.getElementById('dashboard-plan-pill');
   renderDashboardUsernames();
+  renderStatsSyncStatus();
   renderVoteReminder();
 
   const fpItemValue = state.fp_items.reduce((sum, item) => sum + (Number(item.buy_value) || 0), 0);
@@ -9924,6 +10007,7 @@ function getRelevantSkillRoutes(skill, level, mode) {
 
 function renderSkilling(){
   state.skilling_levels = state.skilling_levels || {};
+  renderStatsSyncStatus('skilling-sync-status');
   const search = String(document.getElementById('skilling-search')?.value || '').trim().toLowerCase();
   const modeSelect = document.getElementById('skilling-mode');
   if(modeSelect && state.skilling_mode && modeSelect.value !== state.skilling_mode) modeSelect.value = state.skilling_mode;
@@ -10224,5 +10308,6 @@ document.getElementById('fp-result')?.addEventListener('change', refreshFpStakeP
     document.getElementById('gp-modal')?.classList.remove('hidden');
   }
   render();
+  void refreshImportedStatsIfNeeded({ statusId: 'dashboard-username-status', silent: true });
   startVoteReminderTimer();
 })();
