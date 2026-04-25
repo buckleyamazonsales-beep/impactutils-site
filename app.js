@@ -1231,7 +1231,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.24.50';
+const SITE_VERSION = '2026.04.25.51';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -1736,6 +1736,9 @@ function getCurrentUser() {
   return currentUser;
 }
 const AD_ROTATION_MS = 10000;
+const VOTE_REMINDER_DEFAULT_HOURS = 12;
+const VOTE_REMINDER_MIN_HOURS = 1;
+const VOTE_REMINDER_MAX_HOURS = 72;
 const ROTATING_ADS = {
   sidebar: [
     { tag:'Free tier ad', meta:'Impact utils', title:'Advertise on ImpactUtils', copy:'Small sponsor placements live on the side so the main workflow stays clean for everyone.', cta:'Visit impactutils.com', href:'https://impactutils.com' },
@@ -1841,6 +1844,7 @@ async function sendVerificationEmail(user) {
   }
 }
 let currentPlayerData = null;
+let voteReminderTimer = null;
 
 function parseGP(s) {
   if (!s && s !== 0) return 0;
@@ -1865,6 +1869,217 @@ function fmtGP(n) {
 
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function generateId(){return `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;}
+
+function createDefaultVoteReminderState() {
+  return {
+    interval_hours: VOTE_REMINDER_DEFAULT_HOURS,
+    last_voted_at: null,
+    notifications_enabled: false,
+    notified_for_at: ''
+  };
+}
+
+function getVoteReminderState() {
+  state.vote_reminder = state.vote_reminder && typeof state.vote_reminder === 'object' && !Array.isArray(state.vote_reminder)
+    ? state.vote_reminder
+    : createDefaultVoteReminderState();
+  return state.vote_reminder;
+}
+
+function getVoteReminderIntervalMs(reminder = getVoteReminderState()) {
+  const hours = Math.max(VOTE_REMINDER_MIN_HOURS, Math.min(VOTE_REMINDER_MAX_HOURS, Number(reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS));
+  return Math.round(hours * 60 * 60 * 1000);
+}
+
+function getVoteReminderNextAt(reminder = getVoteReminderState()) {
+  const lastMs = new Date(reminder.last_voted_at || 0).getTime();
+  if (!lastMs) return null;
+  return lastMs + getVoteReminderIntervalMs(reminder);
+}
+
+function formatVoteReminderDuration(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+  }
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
+function formatVoteReminderDate(iso) {
+  if (!iso) return 'Never';
+  const time = new Date(iso).getTime();
+  if (!time) return 'Never';
+  return new Date(time).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function setVoteReminderMessage(message, tone = '') {
+  const box = document.getElementById('vote-timer-message');
+  if (!box) return;
+  box.textContent = message;
+  box.style.color = tone === 'error' ? 'var(--red)' : tone === 'success' ? 'var(--green)' : 'var(--muted)';
+}
+
+function playVoteReminderAlarm() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.45);
+    oscillator.onended = () => {
+      if (typeof ctx.close === 'function') ctx.close();
+    };
+  } catch (e) {}
+}
+
+function renderVoteReminder() {
+  const reminder = getVoteReminderState();
+  const hoursInput = document.getElementById('vote-timer-hours');
+  const lastInput = document.getElementById('vote-timer-last-input');
+  const countdownEl = document.getElementById('vote-timer-countdown');
+  const metaEl = document.getElementById('vote-timer-meta');
+  const intervalEl = document.getElementById('vote-timer-interval-display');
+  const lastVoteEl = document.getElementById('vote-timer-last-vote');
+  const nextVoteEl = document.getElementById('vote-timer-next-vote');
+  const statusEl = document.getElementById('vote-timer-status-pill');
+  if (!countdownEl || !metaEl || !intervalEl || !lastVoteEl || !nextVoteEl || !statusEl) return;
+
+  const nextAt = getVoteReminderNextAt(reminder);
+  const now = Date.now();
+  const ready = !nextAt || nextAt <= now;
+
+  if (hoursInput && document.activeElement !== hoursInput) {
+    hoursInput.value = String(Number(reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS);
+  }
+  if (lastInput && document.activeElement !== lastInput) {
+    lastInput.value = reminder.last_voted_at ? new Date(reminder.last_voted_at).toISOString().slice(0, 16) : '';
+  }
+
+  intervalEl.textContent = `${Number(reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS}h`;
+  lastVoteEl.textContent = formatVoteReminderDate(reminder.last_voted_at);
+  nextVoteEl.textContent = nextAt ? formatVoteReminderDate(new Date(nextAt).toISOString()) : 'Now';
+
+  if (ready) {
+    countdownEl.textContent = 'Ready to vote';
+    metaEl.textContent = reminder.last_voted_at
+      ? 'Your vote cooldown has ended. Vote now, then press "I Voted Now" to restart the 12-hour timer.'
+      : 'Set your timer, then mark a vote to start the 12-hour countdown.';
+    statusEl.textContent = 'Ready now';
+  } else {
+    countdownEl.textContent = formatVoteReminderDuration(nextAt - now);
+    metaEl.textContent = `Next vote window opens ${formatVoteReminderDate(new Date(nextAt).toISOString())}.`;
+    statusEl.textContent = 'Counting down';
+  }
+}
+
+function handleVoteReminderTick() {
+  const reminder = getVoteReminderState();
+  const nextAt = getVoteReminderNextAt(reminder);
+  const readyAtIso = nextAt ? new Date(nextAt).toISOString() : '';
+  if (
+    nextAt &&
+    nextAt <= Date.now() &&
+    reminder.notifications_enabled &&
+    typeof Notification !== 'undefined' &&
+    Notification.permission === 'granted' &&
+    reminder.notified_for_at !== readyAtIso
+  ) {
+    try {
+      new Notification('Impact vote ready', {
+        body: 'Your 12-hour vote timer is done. You can vote again now on Impact.',
+        tag: 'impact-vote-reminder'
+      });
+    } catch (e) {}
+    playVoteReminderAlarm();
+    reminder.notified_for_at = readyAtIso;
+    saveState();
+    setVoteReminderMessage('Vote ready. Desktop notification sent.', 'success');
+  }
+  renderVoteReminder();
+}
+
+function startVoteReminderTimer() {
+  if (voteReminderTimer) {
+    clearInterval(voteReminderTimer);
+    voteReminderTimer = null;
+  }
+  handleVoteReminderTick();
+  voteReminderTimer = setInterval(handleVoteReminderTick, 1000);
+}
+
+function markVoteNow() {
+  const reminder = getVoteReminderState();
+  const hoursInput = document.getElementById('vote-timer-hours');
+  const nextHours = Math.max(VOTE_REMINDER_MIN_HOURS, Math.min(VOTE_REMINDER_MAX_HOURS, Number(hoursInput?.value) || Number(reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS));
+  reminder.interval_hours = nextHours;
+  reminder.last_voted_at = new Date().toISOString();
+  reminder.notified_for_at = '';
+  saveState();
+  renderVoteReminder();
+  setVoteReminderMessage(`Vote timer started for ${nextHours} hours.`, 'success');
+}
+
+function saveVoteReminderSettings() {
+  const reminder = getVoteReminderState();
+  const hoursInput = document.getElementById('vote-timer-hours');
+  const lastInput = document.getElementById('vote-timer-last-input');
+  const nextHours = Math.max(VOTE_REMINDER_MIN_HOURS, Math.min(VOTE_REMINDER_MAX_HOURS, Number(hoursInput?.value) || Number(reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS));
+  reminder.interval_hours = nextHours;
+  if (lastInput?.value) {
+    const customMs = new Date(lastInput.value).getTime();
+    if (!customMs) {
+      setVoteReminderMessage('Enter a valid custom last-vote time.', 'error');
+      return;
+    }
+    reminder.last_voted_at = new Date(customMs).toISOString();
+    reminder.notified_for_at = '';
+  }
+  saveState();
+  renderVoteReminder();
+  setVoteReminderMessage(`Vote reminder saved at ${nextHours} hours.`, 'success');
+}
+
+async function enableVoteNotifications() {
+  if (typeof Notification === 'undefined') {
+    setVoteReminderMessage('This browser does not support desktop notifications.', 'error');
+    return;
+  }
+  const reminder = getVoteReminderState();
+  const permission = await Notification.requestPermission();
+  reminder.notifications_enabled = permission === 'granted';
+  saveState();
+  renderVoteReminder();
+  setVoteReminderMessage(
+    permission === 'granted'
+      ? 'Desktop notifications enabled for the vote timer.'
+      : 'Notification permission was not granted.',
+    permission === 'granted' ? 'success' : 'error'
+  );
+}
+
+function clearVoteReminder() {
+  state.vote_reminder = createDefaultVoteReminderState();
+  saveState();
+  renderVoteReminder();
+  setVoteReminderMessage('Vote timer reset.', 'success');
+}
 
 function loadState(){
   try{
@@ -1936,6 +2151,7 @@ function loadState(){
       search:'',
       hide_complete:false
     },
+    vote_reminder:createDefaultVoteReminderState(),
     session_start_gp: 0
   };
 }
@@ -6391,6 +6607,13 @@ function normalizeState(){
       updated_at: Number(row.updated_at) || Date.now()
     }))
     .filter(row => row.key && row.display);
+  state.vote_reminder = state.vote_reminder && typeof state.vote_reminder === 'object' && !Array.isArray(state.vote_reminder)
+    ? state.vote_reminder
+    : createDefaultVoteReminderState();
+  state.vote_reminder.interval_hours = Math.max(VOTE_REMINDER_MIN_HOURS, Math.min(VOTE_REMINDER_MAX_HOURS, Number(state.vote_reminder.interval_hours) || VOTE_REMINDER_DEFAULT_HOURS));
+  state.vote_reminder.last_voted_at = state.vote_reminder.last_voted_at ? String(state.vote_reminder.last_voted_at) : null;
+  state.vote_reminder.notifications_enabled = Boolean(state.vote_reminder.notifications_enabled);
+  state.vote_reminder.notified_for_at = String(state.vote_reminder.notified_for_at || '');
   state.collection_log = state.collection_log && typeof state.collection_log === 'object' && !Array.isArray(state.collection_log)
     ? state.collection_log
     : {};
@@ -9004,6 +9227,7 @@ function renderDashboard(){
   const momentumEl = document.getElementById('dashboard-momentum-list');
   const dashboardPlanPill = document.getElementById('dashboard-plan-pill');
   renderDashboardUsernames();
+  renderVoteReminder();
 
   const fpItemValue = state.fp_items.reduce((sum, item) => sum + (Number(item.buy_value) || 0), 0);
   const activeGoals = state.goals.filter(goal => !goal.completed);
@@ -10000,4 +10224,5 @@ document.getElementById('fp-result')?.addEventListener('change', refreshFpStakeP
     document.getElementById('gp-modal')?.classList.remove('hidden');
   }
   render();
+  startVoteReminderTimer();
 })();
