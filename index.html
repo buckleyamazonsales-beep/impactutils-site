@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ImpactUtils — impactutils.com</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=2026.04.25.52">
+<link rel="stylesheet" href="./styles.css?v=2026.04.25.53">
 </head>
 <body>
 
@@ -153,58 +153,57 @@
 
 <div class="modal-overlay hidden" id="pricing-modal">
   <div class="modal pricing-modal">
-    <div class="modal-title">Free vs Pro</div>
-    <div class="modal-sub">Let everyone use the core app with light ads, then charge for the serious grinder layer.</div>
+    <div class="modal-title">Private Access</div>
+    <div class="modal-sub">ImpactUtils is moving up-market. Core preview stays visible, but serious access is now positioned as a private one-time unlock for advanced players.</div>
     <div class="pricing-grid">
       <div class="pricing-tier" id="pricing-tier-free">
         <div class="pricing-tier-head">
           <div>
-            <div class="pricing-tier-name">Free</div>
-            <div class="pricing-tier-price">Ads supported</div>
+            <div class="pricing-tier-name">Preview</div>
+            <div class="pricing-tier-price">Public surface only</div>
           </div>
-          <div class="account-pill">Starter</div>
+          <div class="account-pill">Open</div>
         </div>
-        <div class="pricing-tier-copy">Strong enough to hook users without giving away the deeper planning layer.</div>
+        <div class="pricing-tier-copy">Useful for checking the tool, but intentionally not where the private edge lives.</div>
         <div class="pricing-tier-list">
-          <div>Flip tracking, history, and basic analysis</div>
-          <div>FP bankroll tracking and auto-sized logging</div>
-          <div>Slayer guide browsing, media, and session logs</div>
-          <div>Marketplace access and basic goals</div>
-          <div>Light ads to support the free tier</div>
+          <div>Core tracker preview and public-facing utilities</div>
+          <div>Basic logging, browsing, and account setup</div>
+          <div>Enough access to understand the workflow before buying in</div>
+          <div>Free tier stays limited so the private planning layer stays private</div>
         </div>
-        <button class="btn" onclick="setPlan('free')" id="pricing-free-btn">Stay Free</button>
+        <button class="btn" onclick="setPlan('free')" id="pricing-free-btn">Stay On Preview</button>
       </div>
       <div class="pricing-tier pricing-tier-pro" id="pricing-tier-pro">
         <div class="pricing-tier-head">
           <div>
             <div class="pricing-tier-name">Pro</div>
-            <div class="pricing-tier-price">$7 · 30-day pass</div>
+            <div class="pricing-tier-price">$249 one time</div>
           </div>
-          <div class="account-pill">No Ads</div>
+          <div class="account-pill">Private</div>
         </div>
-        <div class="pricing-tier-copy">Best for daily grinders who want the tracker making smarter decisions with them.</div>
+        <div class="pricing-tier-copy">Permanent private access for players who actually use the tool as a serious edge, not as a casual app.</div>
         <div class="pricing-tier-list">
-          <div>Timed Pro pass through Stripe checkout — not the Founder lifetime tier</div>
-          <div>Ad-free app experience</div>
-          <div>Slayer favorites and private boss notes</div>
-          <div>Advanced FP tools, streak review, and risk layers</div>
-          <div>Unlimited planning depth and smarter recommendations</div>
-          <div>Priority path to future cloud sync and multi-device backup</div>
+          <div>One-time Stripe checkout — no monthly renewal, no timed pass</div>
+          <div>Ad-free private workspace</div>
+          <div>Full skilling, slayer, planning, notes, and recommendation layers</div>
+          <div>Advanced FP, strategy, and premium tracker depth</div>
+          <div>Built for experienced users who want the full desk</div>
         </div>
-        <button class="btn primary" onclick="setPlan('pro')" id="pricing-pro-btn">Upgrade to Pro</button>
+        <button class="btn primary" onclick="setPlan('pro')" id="pricing-pro-btn">Unlock Pro Access</button>
       </div>
       <div class="pricing-tier" id="pricing-tier-founder">
         <div class="pricing-tier-head">
           <div>
             <div class="pricing-tier-name">Founder</div>
-            <div class="pricing-tier-price">$49 one time</div>
+            <div class="pricing-tier-price">$999 one time</div>
           </div>
-          <div class="account-pill">Launch</div>
+          <div class="account-pill">Elite</div>
         </div>
-        <div class="pricing-tier-copy">A one-time supporter tier — full Pro depth without the 30-day Pro window.</div>
+        <div class="pricing-tier-copy">The top-tier private unlock for clan insiders, early supporters, and players who want the highest-status seat in the product.</div>
         <div class="pricing-tier-list">
-          <div>Everything in Pro, for the life of this Founder tier (not the timed Pro pass)</div>
-          <div>Founder badge and launch-tier status</div>
+          <div>Everything in Pro, permanently</div>
+          <div>Founder status, premium identity, and top access tier</div>
+          <div>Best fit for empire/clan-adjacent users and long-term supporters</div>
           <div>Processed through Stripe checkout on the live site</div>
         </div>
         <button class="btn" onclick="setPlan('founder')" id="pricing-founder-btn">Choose Founder</button>
@@ -345,13 +344,13 @@
         <div class="account-panel-card">
           <div class="account-plan-block">
             <div class="account-plan-header">
-              <span class="account-plan-eyebrow">Subscription</span>
+              <span class="account-plan-eyebrow">Access</span>
               <span class="account-plan-actions">
                 <button type="button" class="btn-sm account-plan-cta hidden" id="account-billing-portal-btn" onclick="openBillingPortal()">Billing portal</button>
                 <button type="button" class="btn-sm account-plan-cta" onclick="openPricingModal()">View plans</button>
               </span>
             </div>
-            <p class="account-plan-description" id="plan-status-copy">Core tracking stays open. Premium planning, notes, and advanced analytics unlock in Pro.</p>
+            <p class="account-plan-description" id="plan-status-copy">Preview access stays open. Private planning depth and the serious power-user layer unlock through one-time access.</p>
           </div>
           <div id="user-points-display" style="display:none;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:8px;text-align:center;">
             <div style="font-size:11px;color:var(--muted);">Reward Points</div>
@@ -486,20 +485,20 @@
         </div>
 
         <div class="card">
-          <div class="card-title">Upgrade to Pro</div>
+          <div class="card-title">Private Access</div>
           <div class="dashboard-pro-card">
-            <div class="dashboard-pro-price">$7 · 30-day Pro pass</div>
-            <div class="dashboard-pro-copy" id="dashboard-pro-copy">Ad-free plus the premium layers users actually pay for.</div>
+            <div class="dashboard-pro-price">$249 one time</div>
+            <div class="dashboard-pro-copy" id="dashboard-pro-copy">Private, ad-free, and intentionally priced for serious users only.</div>
             <div class="guide-pill" id="dashboard-plan-pill" style="margin-bottom:14px;">Free Plan Active</div>
             <div class="dashboard-pro-list">
-              <div>Unlimited goals and roadmap planning</div>
-              <div>Advanced charts and trend history</div>
-              <div>Smart next-step recommendations</div>
-              <div>Future cloud sync and multi-device backup</div>
+              <div>Permanent Pro access with no monthly billing</div>
+              <div>Private planning, notes, and recommendation layers</div>
+              <div>Cleaner workspace with no ads</div>
+              <div>Premium desk feel instead of public-tool pricing</div>
             </div>
             <div class="btn-row">
-              <button class="btn primary" onclick="handleDashboardUpgradeClick()" id="dashboard-upgrade-btn">Upgrade to Pro</button>
-              <button class="btn" onclick="openPricingModal('founder')" id="dashboard-founder-btn">Founder Offer</button>
+              <button class="btn primary" onclick="handleDashboardUpgradeClick()" id="dashboard-upgrade-btn">Unlock Pro Access</button>
+              <button class="btn" onclick="openPricingModal('founder')" id="dashboard-founder-btn">Founder Tier</button>
             </div>
           </div>
         </div>
@@ -1731,6 +1730,6 @@
   Netlify (especially custom domain): uncomment so billing + email use serverless functions:
   <script>window.IMPACT_BILLING_FUNCTIONS_BASE='/.netlify/functions';window.IMPACT_VERIFICATION_ENDPOINT='/.netlify/functions/send-verification-email';</script>
 -->
-<script src="./app.js?v=2026.04.25.52"></script>
+<script src="./app.js?v=2026.04.25.53"></script>
 </body>
 </html>

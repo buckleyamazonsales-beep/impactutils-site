@@ -1231,7 +1231,7 @@ const AUTH_USERS_KEY = 'impact_flip_tracker_auth_users_v1';
 const AUTH_SESSION_KEY = 'impact_flip_tracker_auth_session_v2';
 const STAY_SIGNED_IN_KEY = 'impact_stay_signed_in';
 const VISITOR_SESSION_KEY = 'impact_visitor_session_id_v1';
-const SITE_VERSION = '2026.04.25.52';
+const SITE_VERSION = '2026.04.25.53';
 const AUTH_DB_NAME = 'impact_tracker_auth_db';
 const AUTH_DB_VERSION = 1;
 const AUTH_DB_STORE = 'kv';
@@ -1549,7 +1549,7 @@ async function handleBillingQueryParams() {
 
   if (!currentUser?.email || !currentUser.email_verified) {
     setPricingStatus(
-      'Sign in with the same verified email you used at Stripe, then open Account — your plan will sync automatically.',
+      'Sign in with the same verified email you used at Stripe, then open Account — your access will sync automatically.',
       'error'
     );
     openPricingModal('pro');
@@ -1583,7 +1583,7 @@ async function handleBillingQueryParams() {
     state.subscription.currentPeriodEnd = data.currentPeriodEnd || null;
     saveState();
     updatePlanUI();
-    setPricingStatus('Thanks! Your ' + pendingPlan.charAt(0).toUpperCase() + pendingPlan.slice(1) + ' plan is activated.', 'success');
+    setPricingStatus('Thanks! Your ' + pendingPlan.charAt(0).toUpperCase() + pendingPlan.slice(1) + ' access is activated.', 'success');
     closePricingModal();
   } else {
     setPricingStatus(
@@ -1656,7 +1656,7 @@ async function tryStartPaidCheckout(plan) {
     return true;
   }
   if (!currentUser.email_verified) {
-    setPricingStatus('Verify your email before subscribing.', 'error');
+    setPricingStatus('Verify your email before checkout.', 'error');
     return true;
   }
 
@@ -4403,8 +4403,8 @@ async function loadAdminPurchases() {
             <th style="padding:8px 6px;">Plan</th>
             <th style="padding:8px 6px;">Status</th>
             <th style="padding:8px 6px;">Customer ID</th>
-            <th style="padding:8px 6px;">Subscription ID</th>
-            <th style="padding:8px 6px;">Renews/Created</th>
+            <th style="padding:8px 6px;">Access Record</th>
+            <th style="padding:8px 6px;">Purchased</th>
           </tr>
         </thead>
         <tbody>
@@ -6255,14 +6255,10 @@ function formatProAccessEndLabel() {
 
 function getPlanLabel() {
   const plan = getCurrentPlan();
-  if (plan === 'pro') {
-    const when = formatProAccessEndLabel();
-    if (when) return `Pro · ends ${when}`;
-    return 'Pro $7 / 30 days';
-  }
+  if (plan === 'pro') return 'Pro · Lifetime';
   if (plan === 'founder' && isEmpireUser()) return 'Founder · Empire';
   if (plan === 'founder') return 'Founder';
-  return 'Free';
+  return 'Preview';
 }
 
 function setPricingStatus(message = '', tone = 'muted') {
@@ -6288,9 +6284,9 @@ function updatePricingUI(preferredPlan = '') {
     if (tier) tier.classList.toggle('active', highlightedPlan === plan);
     if (btn) {
       if (currentPlan === plan) {
-        btn.textContent = plan === 'free' ? 'Current Plan' : plan === 'pro' ? 'Pro Active' : 'Founder Active';
+        btn.textContent = plan === 'free' ? 'Current Access' : plan === 'pro' ? 'Pro Active' : 'Founder Active';
       } else {
-        btn.textContent = plan === 'free' ? 'Stay Free' : plan === 'pro' ? 'Upgrade to Pro' : 'Choose Founder';
+        btn.textContent = plan === 'free' ? 'Stay On Preview' : plan === 'pro' ? 'Unlock Pro Access' : 'Choose Founder';
       }
     }
   });
@@ -6317,9 +6313,7 @@ function updatePlanUI() {
   const accountPortalBtn = document.getElementById('account-billing-portal-btn');
 
   if (accountPortalBtn) {
-    const showPortal = Boolean(
-      state?.subscription?.stripeCustomerId && state?.subscription?.billing === 'stripe'
-    );
+    const showPortal = false;
     accountPortalBtn.classList.toggle('hidden', !showPortal);
   }
 
@@ -6327,48 +6321,39 @@ function updatePlanUI() {
   if (planCopy) {
     if (!isProUser()) {
       planCopy.textContent =
-        'Core tracking stays open. Premium planning, notes, smart helpers, and the ad-free experience unlock in Pro.';
+        'Preview access stays open. Private planning, notes, smart helpers, and the ad-free workspace unlock through one-time access.';
     } else if (plan === 'founder') {
       planCopy.textContent =
-        'Founder unlocks every Pro feature for the life of this product tier — no subscription term or renewal.';
-    } else if (plan === 'pro' && formatProAccessEndLabel()) {
-      planCopy.textContent = `Pro stays active through ${formatProAccessEndLabel()}, then returns to Free unless you renew in Stripe.`;
+        'Founder is the permanent top-tier unlock with every Pro feature, premium status, and no monthly billing.';
     } else {
       planCopy.textContent =
-        'Premium tools are unlocked. Favorites, private notes, smart helpers, and the ad-free experience are active.';
+        'Pro is permanently unlocked. The private planning layer, advanced tools, and ad-free workspace are active.';
     }
   }
   if (dashboardPill) {
-    dashboardPill.textContent = plan === 'free' ? 'Free Plan Active' : plan === 'founder' ? 'Founder Plan Active' : 'Pro Plan Active';
+    dashboardPill.textContent = plan === 'free' ? 'Preview Active' : plan === 'founder' ? 'Founder Active' : 'Pro Active';
   }
   if (dashboardCopy) {
     if (!isProUser()) {
-      dashboardCopy.textContent = 'Ad-free plus the premium layers users actually pay for.';
+      dashboardCopy.textContent = 'The public preview is open, but the serious desk stays behind paid access.';
     } else if (plan === 'founder') {
       dashboardCopy.textContent =
-        'Founder mode is active — full Pro depth without a timed subscription window.';
-    } else if (plan === 'pro' && formatProAccessEndLabel()) {
-      dashboardCopy.textContent = `Pro access runs through ${formatProAccessEndLabel()}, then ends unless you renew in Stripe.`;
+        'Founder mode is active — the elite private tier with full permanent access.';
     } else {
       dashboardCopy.textContent =
-        'Ad-free premium mode is active. This is where the deeper tools, planning, and power-user features live.';
+        'Pro access is active for life. This is the real private workspace with the full power-user layer.';
     }
   }
   if (dashboardUpgradeBtn) {
-    dashboardUpgradeBtn.textContent = isProUser() ? 'Manage Plan' : 'Upgrade to Pro';
-    const stripePortal = Boolean(
-      state?.subscription?.stripeCustomerId && state?.subscription?.billing === 'stripe'
-    );
-    if (isProUser() && stripePortal) {
-      dashboardUpgradeBtn.setAttribute('onclick', 'openBillingPortal()');
-    } else if (isProUser()) {
+    dashboardUpgradeBtn.textContent = isProUser() ? 'View Access' : 'Unlock Pro Access';
+    if (isProUser()) {
       dashboardUpgradeBtn.setAttribute('onclick', "openPricingModal('pro')");
     } else {
       dashboardUpgradeBtn.setAttribute('onclick', "handleDashboardUpgradeClick()");
     }
   }
   if (dashboardFounderBtn) {
-    dashboardFounderBtn.textContent = plan === 'founder' ? 'Founder Active' : 'Founder Offer';
+    dashboardFounderBtn.textContent = plan === 'founder' ? 'Founder Active' : 'Founder Tier';
   }
   if (fpBanner) fpBanner.classList.toggle('hidden', isProUser());
   if (slayerBanner) slayerBanner.classList.toggle('hidden', isProUser());
@@ -6383,7 +6368,7 @@ function updatePlanUI() {
   if (fpHint) {
     fpHint.textContent = isProUser()
       ? 'Pro FP assistant is active. Use auto-fill when you want the app to suggest a bankroll-aware base stake for the current session.'
-      : 'Tip: In a fair 50/50, flat or lightly capped sizing is safer than endlessly pressing wins. Pro unlocks the auto-fill assistant if you want the app handling the smarter base suggestion for you.';
+      : 'Tip: In a fair 50/50, flat or lightly capped sizing is safer than endlessly pressing wins. The private paid tier unlocks the smarter auto-fill assistant.';
   }
   renderAdSlots();
   startAdRotationTimer();
@@ -6459,10 +6444,10 @@ function applyLocalPlan(plan) {
   updatePricingUI();
   setPricingStatus(
     plan === 'free'
-      ? 'Free plan active. Keep the core tools open and let ads carry the free tier.'
+      ? 'Preview mode active. Public-facing access stays open.'
       : plan === 'founder'
-        ? 'Founder plan active in this preview. Founder includes all Pro tools and ad-free access.'
-        : 'Pro plan active in this preview. Premium Slayer and FP tools are now unlocked.',
+        ? 'Founder access active in this preview. Founder includes every Pro tool permanently.'
+        : 'Pro access active in this preview. Private tools are fully unlocked.',
     'success'
   );
 }
@@ -6471,7 +6456,7 @@ async function setPlan(plan) {
   if (!['free', 'pro', 'founder'].includes(plan)) return;
   if (plan === 'free' && state?.subscription?.billing === 'stripe' && isProUser()) {
     setPricingStatus(
-      'Paid access is managed in Stripe. Use Billing portal (account panel) for subscriptions, or stay on Founder without a subscription.',
+      'Paid access is managed through Stripe checkout records. Keep your current unlock, or switch plans through the pricing window.',
       'error'
     );
     return;
@@ -6486,7 +6471,7 @@ async function setPlan(plan) {
 function requireProFeature(featureName) {
   if (isProUser()) return true;
   openPricingModal('pro');
-  setPricingStatus(`${featureName} is part of Pro. Core logging stays free, but this personal planning layer is gated.`, 'error');
+  setPricingStatus(`${featureName} is part of the private paid layer. Public preview stays open, but this personal planning feature is gated.`, 'error');
   return false;
 }
 
@@ -9336,7 +9321,7 @@ function renderDashboard(){
   if(bankrollEl) bankrollEl.textContent = state.fp_settings.bankroll || fpItemValue ? `${fmtGP(state.fp_settings.bankroll)} + ${fmtGP(fpItemValue)} items` : '—';
   if(activeGoalsEl) activeGoalsEl.textContent = activeGoals.length.toLocaleString();
   if(bossesEl) bossesEl.textContent = SLAYER_TASKS.length.toLocaleString();
-  if(dashboardPlanPill) dashboardPlanPill.textContent = getCurrentPlan() === 'free' ? 'Free Plan Active' : getCurrentPlan() === 'founder' ? 'Founder Plan Active' : 'Pro Plan Active';
+  if(dashboardPlanPill) dashboardPlanPill.textContent = getCurrentPlan() === 'free' ? 'Preview Active' : getCurrentPlan() === 'founder' ? 'Founder Active' : 'Pro Active';
 
   const combinedChart = document.getElementById('chart-combined-trend');
   if(combinedChart) combinedChart.innerHTML = buildMiniChart(combinedSeries, 'var(--green)');
@@ -10062,44 +10047,74 @@ function renderSkilling(){
     const safeFocus = escapeHtml(skill.focus);
     const safeModeSummary = escapeHtml(modeSummary);
     const safeSource = escapeHtml(skill.source);
+    const progressCopy = skill.level >= 99
+      ? 'This skill is finished. You can leave it parked unless you want route notes handy.'
+      : `${99 - skill.level} levels left to max. ${status} keeps this route moving without guesswork.`;
     return `
       <div class="skilling-card ${skill.level >= 99 ? 'maxed' : ''}">
-        <div class="skilling-card-top">
-          <div class="skilling-title-wrap">
-            <div class="skilling-logo" aria-hidden="true">${skill.icon || '⭐'}</div>
-            <div>
-            <div class="skilling-kicker">Impact Wiki 1-99</div>
-            <div class="skilling-title">${safeName}</div>
+        <div class="skilling-card-shell">
+          <div class="skilling-identity">
+            <div class="skilling-card-top">
+              <div class="skilling-title-wrap">
+                <div class="skilling-logo" aria-hidden="true">${skill.icon || '⭐'}</div>
+                <div>
+                  <div class="skilling-kicker">Impact Wiki 1-99</div>
+                  <div class="skilling-title">${safeName}</div>
+                </div>
+              </div>
+              <div class="skilling-level-badge">${skill.level}</div>
+            </div>
+            <div class="skilling-focus">${safeModeSummary}</div>
+            <div class="skilling-progress-panel">
+              <div class="skilling-progress-row">
+                <span>${safeSource}</span>
+                <span>${status}</span>
+              </div>
+              <div class="progress-bar skilling-progress"><div class="progress-fill" style="width:${progress}%"></div></div>
+              <div class="skilling-progress-copy">${escapeHtml(progressCopy)}</div>
             </div>
           </div>
-          <div class="skilling-level-badge">${skill.level}</div>
-        </div>
-        <div class="skilling-focus">${safeModeSummary}</div>
-        <div class="skilling-progress-row">
-          <span>${safeSource}</span>
-          <span>${status}</span>
-        </div>
-        <div class="progress-bar skilling-progress"><div class="progress-fill" style="width:${progress}%"></div></div>
-        <div class="skilling-next-step">
-          <div class="skilling-next-label">${skill.level >= 99 ? 'Maxed' : `${mode === 'money' ? 'Money route' : mode === 'middle' ? 'Middle route' : 'Fastest next step'}`}</div>
-          <div class="skilling-next-title">${skill.level >= 99 ? 'You are already 99.' : escapeHtml(nextTitle)}</div>
-          <div class="skilling-next-copy">${skill.level >= 99 ? 'No more levels needed for max.' : escapeHtml(nextCopy)}</div>
-        </div>
-        <div class="skilling-route-list">
-          ${routes.map(route => `
-            <div class="skilling-route-step">
-              <span>${route.from}-${route.to}</span>
-              <strong>${escapeHtml(route.method)}</strong>
+          <div class="skilling-main">
+            <div class="skilling-next-step">
+              <div class="skilling-next-label">${skill.level >= 99 ? 'Maxed' : `${mode === 'money' ? 'Money route' : mode === 'middle' ? 'Middle route' : 'Fastest next step'}`}</div>
+              <div class="skilling-next-title">${skill.level >= 99 ? 'You are already 99.' : escapeHtml(nextTitle)}</div>
+              <div class="skilling-next-copy">${skill.level >= 99 ? 'No more levels needed for max.' : escapeHtml(nextCopy)}</div>
             </div>
-          `).join('')}
-        </div>
-        <div class="skilling-card-actions">
-          <label class="skilling-level-input">
-            ${skill.source === 'Imported Stats' ? 'Stats level' : 'Manual level'}
-            <input type="number" min="1" max="99" value="${skill.level}" ${skill.source === 'Imported Stats' ? 'disabled' : ''} onchange="updateSkillingLevel('${safeName}', this.value)">
-          </label>
-          ${skill.source === 'Imported Stats' ? '' : `<button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>`}
-          <a class="btn-sm skilling-wiki-btn" href="${skill.wiki}" target="_blank" rel="noopener">Wiki Guide</a>
+            <div class="skilling-route-list">
+              ${routes.map(route => `
+                <div class="skilling-route-step">
+                  <span>${route.from}-${route.to}</span>
+                  <strong>${escapeHtml(route.method)}</strong>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="skilling-side">
+            <div class="skilling-stat-panel">
+              <div class="skilling-progress-row">
+                <span>Current</span>
+                <span>${skill.level}/99</span>
+              </div>
+              <div class="skilling-progress-row">
+                <span>Mode</span>
+                <span>${mode === 'money' ? 'Money' : mode === 'middle' ? 'Middle' : 'Fastest'}</span>
+              </div>
+              <div class="skilling-progress-row">
+                <span>Next target</span>
+                <span>${nextMilestone}</span>
+              </div>
+            </div>
+            <div class="skilling-card-actions">
+              <label class="skilling-level-input">
+                ${skill.source === 'Imported Stats' ? 'Stats level' : 'Manual level'}
+                <input type="number" min="1" max="99" value="${skill.level}" ${skill.source === 'Imported Stats' ? 'disabled' : ''} onchange="updateSkillingLevel('${safeName}', this.value)">
+              </label>
+              <div class="skilling-action-row">
+                ${skill.source === 'Imported Stats' ? '' : `<button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>`}
+                <a class="btn-sm skilling-wiki-btn" href="${skill.wiki}" target="_blank" rel="noopener">Wiki Guide</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;

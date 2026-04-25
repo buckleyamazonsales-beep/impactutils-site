@@ -85,20 +85,15 @@ if ($expectedPlan === 'founder') {
 }
 
 if ($expectedPlan === 'pro') {
-    $sub = $sess['subscription'] ?? null;
-    if (!is_array($sub)) {
-        lemon_json_exit(200, ['verified' => false, 'error' => 'Pro subscription not found in checkout session.']);
-    }
-    $st = (string)($sub['status'] ?? '');
-    if (!in_array($st, ['active', 'trialing', 'past_due'], true)) {
-        lemon_json_exit(200, ['verified' => false, 'error' => 'Pro subscription not active. Status: ' . $st]);
+    if ($paymentStatus !== 'paid') {
+        lemon_json_exit(200, ['verified' => false, 'error' => 'Pro purchase not completed. Payment status: ' . $paymentStatus]);
     }
     lemon_json_exit(200, [
         'verified' => true,
         'plan' => 'pro',
         'stripeCustomerId' => (string)($sess['customer'] ?? ''),
-        'stripeSubscriptionId' => (string)($sub['id'] ?? ''),
-        'currentPeriodEnd' => stripe_subscription_period_end($sub)
+        'stripeSubscriptionId' => '',
+        'currentPeriodEnd' => null
     ]);
 }
 

@@ -61,30 +61,27 @@ try {
         $mode = (string)($sess['mode'] ?? '');
         $customerId = (string)($sess['customer'] ?? '');
 
-        if ($mode === 'subscription') {
-            $sub = $sess['subscription'] ?? null;
-            if (!is_array($sub)) {
-                lemon_json_exit(200, $empty);
-            }
-            $st = (string)($sub['status'] ?? '');
-            if (!in_array($st, ['active', 'trialing', 'past_due'], true)) {
-                if ($st === 'canceled' || $st === 'unpaid') {
-                    lemon_json_exit(200, $empty);
+        if ($mode === 'payment' && $paymentStatus === 'paid') {
+            $paidPlan = strtolower(trim((string)($sess['metadata']['impact_plan'] ?? '')));
+            if ($paidPlan !== 'pro' && $paidPlan !== 'founder') {
+                $lineItems = $sess['line_items']['data'] ?? [];
+                foreach ($lineItems as $item) {
+                    $pid = is_array($item) ? (string)($item['price']['id'] ?? '') : '';
+                    if ($pid === $pricePro) {
+                        $paidPlan = 'pro';
+                        break;
+                    }
+                    if ($pid === $priceFounder) {
+                        $paidPlan = 'founder';
+                        break;
+                    }
                 }
             }
-            $end = stripe_subscription_period_end($sub);
+            if (!in_array($paidPlan, ['pro', 'founder'], true)) {
+                lemon_json_exit(200, $empty);
+            }
             lemon_json_exit(200, [
-                'plan' => 'pro',
-                'billing' => 'stripe',
-                'stripeSubscriptionId' => (string)($sub['id'] ?? ''),
-                'stripeCustomerId' => (string)($sub['customer'] ?? $customerId),
-                'currentPeriodEnd' => $end,
-            ]);
-        }
-
-        if ($mode === 'payment' && $paymentStatus === 'paid') {
-            lemon_json_exit(200, [
-                'plan' => 'founder',
+                'plan' => $paidPlan,
                 'billing' => 'stripe',
                 'stripeSubscriptionId' => '',
                 'stripeCustomerId' => $customerId,
@@ -122,64 +119,29 @@ try {
                     continue;
                 }
                 $metaPlan = (string)($srow['metadata']['impact_plan'] ?? '');
-                $foundFounder = $metaPlan === 'founder';
-                if (!$foundFounder && !empty($srow['line_items']['data']) && is_array($srow['line_items']['data'])) {
+                $foundPlan = in_array($metaPlan, ['pro', 'founder'], true) ? $metaPlan : '';
+                if ($foundPlan === '' && !empty($srow['line_items']['data']) && is_array($srow['line_items']['data'])) {
                     foreach ($srow['line_items']['data'] as $li) {
                         $pid = is_array($li) ? (string)($li['price']['id'] ?? $li['price'] ?? '') : '';
+                        if ($pid === $pricePro) {
+                            $foundPlan = 'pro';
+                            break;
+                        }
                         if ($pid === $priceFounder) {
-                            $foundFounder = true;
+                            $foundPlan = 'founder';
                             break;
                         }
                     }
                 }
-                if ($foundFounder) {
+                if ($foundPlan !== '') {
                     lemon_json_exit(200, [
-                        'plan' => 'founder',
+                        'plan' => $foundPlan,
                         'billing' => 'stripe',
                         'stripeSubscriptionId' => '',
                         'stripeCustomerId' => $cid,
                         'currentPeriodEnd' => null,
                     ]);
                 }
-            }
-        }
-
-        [$sbc, $subBody] = stripe_api_request($sk, 'GET', '/subscriptions', [
-            'customer' => $cid,
-            'status' => 'all',
-            'limit' => 20,
-        ]);
-        if ($sbc < 200 || $sbc >= 300 || empty($subBody['data']) || !is_array($subBody['data'])) {
-            continue;
-        }
-        $now = time();
-        foreach ($subBody['data'] as $sub) {
-            if (!is_array($sub)) {
-                continue;
-            }
-            $items = $sub['items']['data'][0] ?? null;
-            $priceId = is_array($items) ? (string)($items['price']['id'] ?? '') : '';
-            if ($priceId !== $pricePro) {
-                continue;
-            }
-            $st = (string)($sub['status'] ?? '');
-            if (in_array($st, ['active', 'trialing', 'past_due'], true)) {
-                lemon_json_exit(200, [
-                    'plan' => 'pro',
-                    'billing' => 'stripe',
-                    'stripeSubscriptionId' => (string)($sub['id'] ?? ''),
-                    'stripeCustomerId' => $cid,
-                    'currentPeriodEnd' => stripe_subscription_period_end($sub),
-                ]);
-            }
-            if ($st === 'canceled' && !empty($sub['current_period_end']) && (int)$sub['current_period_end'] > $now) {
-                lemon_json_exit(200, [
-                    'plan' => 'pro',
-                    'billing' => 'stripe',
-                    'stripeSubscriptionId' => (string)($sub['id'] ?? ''),
-                    'stripeCustomerId' => $cid,
-                    'currentPeriodEnd' => stripe_subscription_period_end($sub),
-                ]);
             }
         }
     }

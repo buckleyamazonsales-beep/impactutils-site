@@ -42,7 +42,7 @@ if ($siteUrl === '') {
 }
 
 $priceId = $plan === 'founder' ? $priceFounder : $pricePro;
-$mode = $plan === 'founder' ? 'payment' : 'subscription';
+$mode = 'payment';
 
 $params = [
     'mode' => $mode,
