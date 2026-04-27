@@ -646,7 +646,7 @@ const IMPACT_SKILLING_GUIDES = [
 ];
 
 const OSRS_XP_TABLE = [
-  0, 0, 83, 174, 276, 388, 512, 650, 801, 969, 1154, 1358, 1584, 1833, 2107, 2411, 2746, 3115, 3523, 3973, 4470, 5018, 5624, 6291, 7028, 7842, 8740, 9730, 10824, 12031, 13363, 14833, 16456, 18247, 20224, 22406, 24815, 27473, 30408, 33648, 37224, 41171, 45529, 50339, 55649, 61512, 67983, 75127, 83014, 91717, 101303, 111845, 123435, 136174, 150174, 165568, 182500, 201137, 221669, 244299, 269251, 296790, 327196, 360816, 397970, 438996, 484311, 534337, 589578, 650596, 717983, 792453, 874730, 965618, 1066035, 1176915, 1299294, 1434277, 1583137, 1747188, 1928128, 2127812, 2348301, 2591740, 2860585, 3157490, 3485477, 3847313, 4246449, 4686915, 5173161, 5709772, 6301385, 6954215, 7674395, 8469493, 9348128, 10319200, 11392685, 12574044, 13034431
+  0, 0, 83, 174, 276, 388, 512, 650, 801, 969, 1154, 1358, 1584, 1833, 2107, 2411, 2746, 3115, 3523, 3973, 4470, 5018, 5624, 6291, 7028, 7842, 8740, 9730, 10824, 12031, 13363, 14833, 16456, 18247, 20224, 22406, 24815, 27473, 30408, 33648, 37224, 41171, 45529, 50339, 55649, 61512, 67983, 75127, 83014, 91721, 101333, 111945, 123660, 136594, 150872, 166636, 184040, 203254, 224466, 247886, 273742, 302288, 333804, 368599, 407015, 449428, 496254, 547953, 605032, 668051, 737627, 814445, 899257, 992895, 1096278, 1210421, 1336443, 1475581, 1629200, 1798808, 1986068, 2192818, 2421087, 2673114, 2951373, 3258594, 3597792, 3972294, 4385776, 4842295, 5346332, 5902831, 6517253, 7195629, 7944614, 8771558, 9684577, 10692629, 11805606, 13034431
 ];
 
 function getSkillMultiplier() {
@@ -10051,6 +10051,12 @@ function renderSkilling(){
                   <span class="calc-value highlight">${(actionXP > 0 ? Math.ceil(Math.max(0, targetXP - (state.skilling_current_xp?.[skill.name] || currentXP)) / actionXP) : 0).toLocaleString()}</span>
                 </div>
               </div>
+              
+              <div class="calc-action-row" style="margin-top:12px; display:flex; gap:8px;">
+                 <button class="btn primary btn-sm" style="flex:1" onclick="addSkillingAction('${skill.name}', ${actionXP})">+1 ${activeRoute?.method || 'Action'}</button>
+                 <button class="btn secondary btn-sm" style="flex:1" onclick="resetSkillingGoalProgress('${skill.name}')">Reset Goal</button>
+              </div>
+
               <div class="calc-results" style="margin-top:8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:8px;">
                 <div class="calc-stat">
                   <span class="calc-label">Server Rate</span>
@@ -10117,6 +10123,29 @@ function updateSkillingCurrentXP(skillName, value) {
   }
   
   saveState();
+}
+
+function addSkillingAction(skillName, xpAmount) {
+  state.skilling_current_xp = state.skilling_current_xp || {};
+  const current = state.skilling_current_xp[skillName] || getXPForLevel(state.skilling_levels[skillName]);
+  state.skilling_current_xp[skillName] = current + xpAmount;
+  
+  const newLevel = getLevelForXP(state.skilling_current_xp[skillName]);
+  if (newLevel !== state.skilling_levels[skillName]) {
+    state.skilling_levels[skillName] = newLevel;
+  }
+  
+  saveState();
+  renderSkilling();
+}
+
+function resetSkillingGoalProgress(skillName) {
+  if (confirm(`Reset current XP and target for ${skillName}?`)) {
+    state.skilling_current_xp[skillName] = getXPForLevel(state.skilling_levels[skillName]);
+    delete state.skilling_target_levels[skillName];
+    saveState();
+    renderSkilling();
+  }
 }
 
 function renderPanel(tab){
