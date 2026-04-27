@@ -2034,6 +2034,7 @@ function loadState(){
     skilling_mode:'fastest',
     server_mode:'normal',
     skilling_target_levels:{},
+    skilling_current_xp:{},
     slayer_logs:[],
     fp_logs:[],
     transfers:[],
@@ -10034,14 +10035,30 @@ function renderSkilling(){
                   <input type="number" value="${targetLevel}" min="1" max="99" onchange="updateSkillingTargetLevel('${skill.name}', this.value); renderSkilling()">
                 </div>
               </div>
+              <div class="calc-row" style="margin-top:8px;">
+                <div class="calc-input-group" style="grid-column: 1 / -1;">
+                  <label>Current XP (Optional for exact count)</label>
+                  <input type="number" value="${state.skilling_current_xp?.[skill.name] || currentXP}" min="0" onchange="updateSkillingCurrentXP('${skill.name}', this.value); renderSkilling()">
+                </div>
+              </div>
               <div class="calc-results">
                 <div class="calc-stat">
                   <span class="calc-label">XP Needed</span>
-                  <span class="calc-value">${xpNeeded.toLocaleString()}</span>
+                  <span class="calc-value">${(Math.max(0, targetXP - (state.skilling_current_xp?.[skill.name] || currentXP))).toLocaleString()}</span>
                 </div>
                 <div class="calc-stat">
                   <span class="calc-label">Actions (${activeRoute?.method || 'N/A'})</span>
-                  <span class="calc-value highlight">${actionsNeeded.toLocaleString()}</span>
+                  <span class="calc-value highlight">${(actionXP > 0 ? Math.ceil(Math.max(0, targetXP - (state.skilling_current_xp?.[skill.name] || currentXP)) / actionXP) : 0).toLocaleString()}</span>
+                </div>
+              </div>
+              <div class="calc-results" style="margin-top:8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:8px;">
+                <div class="calc-stat">
+                  <span class="calc-label">Server Rate</span>
+                  <span class="calc-value">${multiplier}x</span>
+                </div>
+                <div class="calc-stat">
+                  <span class="calc-label">XP Per Action</span>
+                  <span class="calc-value">${actionXP.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -10086,6 +10103,19 @@ function renderSkilling(){
 function updateSkillingTargetLevel(skillName, value) {
   state.skilling_target_levels = state.skilling_target_levels || {};
   state.skilling_target_levels[skillName] = Math.max(1, Math.min(99, Math.round(Number(value) || 1)));
+  saveState();
+}
+
+function updateSkillingCurrentXP(skillName, value) {
+  state.skilling_current_xp = state.skilling_current_xp || {};
+  state.skilling_current_xp[skillName] = Math.max(0, Math.round(Number(value) || 0));
+  
+  // Also update level if XP exceeds current level boundaries
+  const newLevel = getLevelForXP(state.skilling_current_xp[skillName]);
+  if (newLevel !== state.skilling_levels[skillName]) {
+    state.skilling_levels[skillName] = newLevel;
+  }
+  
   saveState();
 }
 
