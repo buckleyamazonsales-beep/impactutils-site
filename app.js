@@ -151,163 +151,65 @@ const SLAYER_MAP_LINKS = {
 
 const COLLECTION_LOG_DATA = {
   bosses: [
-    {
-      id: 'general-graardor',
-      name: 'General Graardor',
-      area: 'God Wars Dungeon',
-      note: 'Bandos room uniques and shard tracking.',
-      map: 'Godwars',
-      slayer: '',
-      items: ['Bandos chestplate', 'Bandos tassets', 'Bandos boots', 'Bandos hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet general graardor']
-    },
-    {
-      id: 'commander-zilyana',
-      name: 'Commander Zilyana',
-      area: 'God Wars Dungeon',
-      note: 'Saradomin room drops and hilt progress.',
-      map: 'Godwars',
-      slayer: '',
-      items: ['Armadyl crossbow', 'Saradomin sword', "Saradomin's light", 'Saradomin hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet zilyana']
-    },
-    {
-      id: 'kreearra',
-      name: "Kree'arra",
-      area: 'God Wars Dungeon',
-      note: 'Armadyl armor set and hilt progress.',
-      map: 'Godwars',
-      slayer: '',
-      items: ['Armadyl helmet', 'Armadyl chestplate', 'Armadyl chainskirt', 'Armadyl hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet kree'arra"]
-    },
-    {
-      id: 'kril-tsutsaroth',
-      name: "K'ril Tsutsaroth",
-      area: 'God Wars Dungeon',
-      note: 'Zamorak spear and steam battlestaff log.',
-      map: 'Godwars',
-      slayer: '',
-      items: ['Zamorakian spear', 'Staff of the dead', 'Steam battlestaff', 'Zamorak hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet k'ril tsutsaroth"]
-    },
-    {
-      id: 'corporeal-beast',
-      name: 'Corporeal Beast',
-      area: 'Corp Cave',
-      note: 'Sigils, elixir, and pet progress.',
-      map: 'Corporeal Beast',
-      slayer: 'Corporeal Beast',
-      items: ['Spectral sigil', 'Arcane sigil', 'Elysian sigil', 'Holy elixir', 'Spirit shield', 'Jar of spirits', 'Pet dark core']
-    },
-    {
-      id: 'king-black-dragon',
-      name: 'King Black Dragon',
-      area: 'KBD Lair',
-      note: 'Classic wilderness boss log with visage and heads.',
-      map: 'Ferox Enclave',
-      slayer: 'King Black Dragon',
-      items: ['Dragon pickaxe', 'Dragon axe', 'Draconic visage', 'Kbd heads', 'Prince black dragon']
-    },
-    {
-      id: 'kraken',
-      name: 'Kraken',
-      area: 'Kraken Cove',
-      note: 'Fast slayer boss unique tracker.',
-      map: 'Kraken Cove',
-      slayer: 'Kraken',
-      items: ['Kraken tentacle', 'Trident of the seas', 'Jar of dirt', 'Pet kraken', 'Mystic robe top', 'Mystic robe bottom']
-    },
-    {
-      id: 'duke-sucellus',
-      name: 'Duke Sucellus',
-      area: 'Lassar Undercity',
-      note: 'Vestige, Virtus, and ingot tracking.',
-      map: 'Duke Sucellus',
-      slayer: 'Duke Sucellus',
-      items: ['Magus vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Eye of the duke']
-    },
-    {
-      id: 'crazy-archaeologist',
-      name: 'Crazy Archaeologist',
-      area: 'Forgotten Cemetery',
-      note: 'Quick shard and fedora checkoff.',
-      map: 'Graveyard Of Shadows',
-      slayer: 'Crazy Archaeologist',
-      items: ['Fedora', 'Odium shard 2', 'Malediction shard 2', 'Dragon pickaxe']
-    },
-    {
-      id: 'doom-of-mokhaiotl',
-      name: 'Doom of Mokhaiotl',
-      area: 'Impact Boss',
-      note: 'Compact tracker for the Doom unique set.',
-      map: 'Doom of Mokhaiotl',
-      slayer: 'Doom of Mokhaiotl',
-      items: ['Doom weapon piece', 'Doom armor piece', 'Doom sigil', 'Doom pet']
-    }
+    { id: 'alchemical-hydra', name: 'Alchemical Hydra', area: 'Karuulm Dungeon', note: 'Hydra uniques, jar, and pet progress.', map: '', slayer: '', items: ["Hydra's claw", 'Hydra leather', 'Hydra tail', 'Jar of chemicals', 'Ikkle hydra'] },
+    { id: 'amoxliatl', name: 'Amoxliatl', area: 'Impact Boss', note: 'Impact custom boss tracker.', map: 'Amoxliatl', slayer: 'Amoxliatl', items: ['Amoxliatl fang', 'Amoxliatl hide', 'Amoxliatl eye', 'Amoxliatl pet'] },
+    { id: 'araxxor', name: 'Araxxor', area: 'Morytania Spider Cave', note: 'Araxxor uniques and pet progress.', map: 'Morytania Spider Cave', slayer: 'Araxxor', items: ['Araxyte fang', 'Noxious halberd', 'Amulet of rancour', 'Jar of venom', 'Araxxor pet'] },
+    { id: 'callisto-artio', name: 'Callisto & Artio', area: 'Deep Wilderness', note: 'Shared wilderness bear log and voidwaker progress.', map: 'Callisto', slayer: 'Callisto', items: ['Tyrannical ring', 'Dragon pickaxe', 'Voidwaker hilt', 'Callisto cub'] },
+    { id: 'cerberus', name: 'Cerberus', area: 'Taverley Dungeon', note: 'Crystal trio and Hellpuppy tracker.', map: 'Taverley Dungeon', slayer: 'Cerberus', items: ['Primordial crystal', 'Pegasian crystal', 'Eternal crystal', 'Smouldering stone', 'Hellpuppy'] },
+    { id: 'chaos-elemental', name: 'Chaos Elemental', area: 'Deep Wilderness', note: 'Classic wilderness elemental log.', map: '', slayer: '', items: ['Dragon pickaxe', 'Pet chaos elemental'] },
+    { id: 'chaos-fanatic', name: 'Chaos Fanatic', area: 'Chaos Temple', note: 'Fast wilderness shard tracker.', map: 'Chaos Temple', slayer: 'Chaos Fanatic', items: ['Odium shard 1', 'Malediction shard 1', 'Ancient staff', 'Dragon pickaxe'] },
+    { id: 'commander-zilyana', name: 'Commander Zilyana', area: 'God Wars Dungeon', note: 'Saradomin room drops and hilt progress.', map: 'Godwars', slayer: '', items: ['Armadyl crossbow', 'Saradomin sword', "Saradomin's light", 'Saradomin hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet zilyana'] },
+    { id: 'corporeal-beast', name: 'Corporeal Beast', area: 'Corp Cave', note: 'Sigils, elixir, and pet progress.', map: 'Corporeal Beast', slayer: 'Corporeal Beast', items: ['Spectral sigil', 'Arcane sigil', 'Elysian sigil', 'Holy elixir', 'Spirit shield', 'Jar of spirits', 'Pet dark core'] },
+    { id: 'crazy-archaeologist', name: 'Crazy Archaeologist', area: 'Forgotten Cemetery', note: 'Quick shard and fedora checkoff.', map: 'Graveyard Of Shadows', slayer: 'Crazy Archaeologist', items: ['Fedora', 'Odium shard 2', 'Malediction shard 2', 'Dragon pickaxe'] },
+    { id: 'dagannoth-kings', name: 'Dagannoth Kings', area: 'Waterbirth Dungeon', note: 'Ring and axe tracker for DK sessions.', map: '', slayer: '', items: ['Berserker ring', 'Seers ring', 'Warrior ring', 'Archers ring', 'Dragon axe', 'Mud battlestaff'] },
+    { id: 'demonic-brutus', name: 'Demonic Brutus', area: 'Impact Boss', note: 'Impact custom demon boss tracker.', map: '', slayer: '', items: ['Brutus maul', 'Brutus platebody', 'Brutus platelegs', 'Brutus pet'] },
+    { id: 'demonic-gorillas', name: 'Demonic Gorillas', area: 'Crash Site Cavern', note: 'Zenyte and ballista piece tracker.', map: '', slayer: '', items: ['Zenyte shard', 'Ballista limbs', 'Ballista spring', 'Monkey tail', 'Light frame', 'Heavy frame'] },
+    { id: 'doom-of-mokhaiotl', name: 'Doom of Mokhaiotl', area: 'Impact Boss', note: 'Impact endgame unique set.', map: 'Doom of Mokhaiotl', slayer: 'Doom of Mokhaiotl', items: ['Avernic thread', 'Confliction gloves', 'Doom weapon piece', 'Doom armor piece', 'Doom sigil', 'Doom pet'] },
+    { id: 'duke-sucellus', name: 'Duke Sucellus', area: 'Lassar Undercity', note: 'Vestige, Virtus, and ingot tracking.', map: 'Duke Sucellus', slayer: 'Duke Sucellus', items: ['Magus vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Eye of the duke'] },
+    { id: 'general-graardor', name: 'General Graardor', area: 'God Wars Dungeon', note: 'Bandos room uniques and shard tracking.', map: 'Godwars', slayer: '', items: ['Bandos chestplate', 'Bandos tassets', 'Bandos boots', 'Bandos hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', 'Pet general graardor'] },
+    { id: 'giant-mole', name: 'Giant Mole', area: 'Falador Mole Lair', note: 'Nest and mole pet tracker.', map: '', slayer: '', items: ['Baby mole', 'Mole skin', 'Mole claw'] },
+    { id: 'hespori', name: 'Hespori', area: 'Farming Guild', note: 'Bottomless bucket and anima seed tracker.', map: '', slayer: '', items: ['Bottomless compost bucket', 'White lily seed', 'Attas seed', 'Kronos seed', 'Iasor seed'] },
+    { id: 'hueycoatl', name: 'Hueycoatl', area: 'Impact Boss', note: 'Impact boss unique tracker.', map: '', slayer: '', items: ['Huey unique 1', 'Huey unique 2', 'Huey unique 3', 'Huey pet'] },
+    { id: 'king-black-dragon', name: 'King Black Dragon', area: 'KBD Lair', note: 'Classic wilderness boss log with visage and heads.', map: 'Ferox Enclave', slayer: 'King Black Dragon', items: ['Dragon pickaxe', 'Dragon axe', 'Draconic visage', 'Kbd heads', 'Prince black dragon'] },
+    { id: 'kraken', name: 'Kraken', area: 'Kraken Cove', note: 'Fast slayer boss unique tracker.', map: 'Kraken Cove', slayer: 'Kraken', items: ['Kraken tentacle', 'Trident of the seas', 'Jar of dirt', 'Pet kraken', 'Mystic robe top', 'Mystic robe bottom'] },
+    { id: 'kreearra', name: "Kree'arra", area: 'God Wars Dungeon', note: 'Armadyl armor set and hilt progress.', map: 'Godwars', slayer: '', items: ['Armadyl helmet', 'Armadyl chestplate', 'Armadyl chainskirt', 'Armadyl hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet kree'arra"] },
+    { id: 'kril-tsutsaroth', name: "K'ril Tsutsaroth", area: 'God Wars Dungeon', note: 'Zamorak spear and steam battlestaff log.', map: 'Godwars', slayer: '', items: ['Zamorakian spear', 'Staff of the dead', 'Steam battlestaff', 'Zamorak hilt', 'Godsword shard 1', 'Godsword shard 2', 'Godsword shard 3', "Pet k'ril tsutsaroth"] },
+    { id: 'leviathan', name: 'Leviathan', area: 'Scar', note: 'Vestige, ingot, and Virtus progress.', map: 'Leviathan', slayer: 'Leviathan', items: ['Venator vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'The leviathan lure'] },
+    { id: 'nex', name: 'Nex', area: 'God Wars Dungeon', note: 'Torva, horn, and crossbow tracker.', map: 'Godwars', slayer: 'Nex', items: ['Torva full helm', 'Torva platebody', 'Torva platelegs', 'Nihil horn', 'Zaryte vambraces', 'Zaryte crossbow', 'Ancient hilt', 'Nexling'] },
+    { id: 'nightmare-of-ashihama', name: 'Nightmare of Ashihama', area: 'Slepe', note: 'Inquisitor and orb tracker.', map: '', slayer: '', items: ["Inquisitor's great helm", "Inquisitor's hauberk", "Inquisitor's plateskirt", 'Nightmare staff', 'Volatile orb', 'Harmonised orb', 'Eldritch orb', 'Little nightmare'] },
+    { id: 'phantom-muspah', name: 'Phantom Muspah', area: 'Ancient Prison', note: 'Shard and icon tracker.', map: 'Phantom Muspah', slayer: 'Phantom Muspah', items: ['Venator shard', 'Ancient icon', 'Frozen cache', 'Muphin'] },
+    { id: 'royal-titans', name: 'Royal Titans', area: 'Impact Boss', note: 'Impact custom boss tracker.', map: '', slayer: '', items: ['Royal titans crown', 'Royal titans plate', 'Royal titans relic', 'Royal titans pet'] },
+    { id: 'sarachnis', name: 'Sarachnis', area: 'Forthos Dungeon', note: 'Spider boss uniques and pet progress.', map: '', slayer: '', items: ['Giant egg sac(full)', 'Sarachnis cudgel', 'Jar of eyes', 'Sraracha'] },
+    { id: 'scorpia', name: 'Scorpia', area: 'Deep Wilderness', note: 'Shard tracker with pet support.', map: '', slayer: '', items: ['Odium shard 3', 'Malediction shard 3', "Scorpia's offspring"] },
+    { id: 'scurrius', name: 'Scurrius', area: 'Varrock Sewers', note: 'Rat king spine and pet tracker.', map: '', slayer: '', items: ["Scurrius' spine", 'Scurrius pet'] },
+    { id: 'skotizo', name: 'Skotizo', area: 'Catacombs', note: 'Totem boss uniques and pet progress.', map: 'Catacombs', slayer: 'Skotizo', items: ['Dark claw', 'Dark totem', 'Uncut onyx', 'Jar of darkness', 'Skotos'] },
+    { id: 'vardorvis', name: 'Vardorvis', area: 'Stranglewood', note: 'Vestige, ingot, and Virtus progress.', map: 'Vardorvis', slayer: 'Vardovis', items: ['Ultor vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Butch'] },
+    { id: 'venenatis-spindel', name: 'Venenatis & Spindel', area: 'Deep Wilderness', note: 'Shared spider boss log and voidwaker progress.', map: '', slayer: '', items: ['Treasonous ring', 'Dragon pickaxe', 'Voidwaker gem', 'Venenatis spiderling'] },
+    { id: 'vetion-calvarion', name: "Vet'ion & Calvar'ion", area: 'Deep Wilderness', note: 'Shared skeleton boss log and voidwaker progress.', map: 'Revenants', slayer: "Vet'ion", items: ['Ring of the gods', 'Dragon pickaxe', 'Voidwaker blade', "Vet'ion jr."] },
+    { id: 'vorkath', name: 'Vorkath', area: 'Ungael', note: 'Visage and head tracker with pet support.', map: 'Vorkath', slayer: 'Vorkath', items: ["Vorkath's head", 'Draconic visage', 'Skeletal visage', 'Jar of decay', 'Vorki'] },
+    { id: 'the-whisperer', name: 'The Whisperer', area: 'Lassar Undercity', note: 'Bellator, Virtus, and siren staff tracker.', map: 'The Whisperer', slayer: 'Whisperer', items: ['Bellator vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', "Siren's staff", 'Whisperer pet'] },
+    { id: 'wilderness-mayhem', name: 'Wilderness Mayhem', area: 'Impact Event Boss', note: 'Impact wilderness event tracker.', map: '', slayer: '', items: ['Mayhem relic', 'Mayhem cape', 'Mayhem key', 'Mayhem pet'] },
+    { id: 'yama', name: 'Yama', area: 'Impact Boss', note: 'Endgame Impact boss tracker.', map: 'Yama', slayer: 'Yama', items: ['Oathplate helm', 'Oathplate platebody', 'Oathplate platelegs', 'Yama contract', 'Yama pet'] },
+    { id: 'zulrah', name: 'Zulrah', area: 'Zul-Andra', note: 'Fang, visage, and jar tracker.', map: 'Zulrah', slayer: 'Zulrah', items: ['Tanzanite fang', 'Magic fang', 'Serpentine visage', 'Jar of swamp', 'Pet snakeling'] }
   ],
   raids: [
-    {
-      id: 'chambers-of-xeric',
-      name: 'Chambers of Xeric',
-      area: 'Raid',
-      note: 'Core mega-rare and prayer scroll tracking.',
-      map: '',
-      slayer: '',
-      items: ['Twisted bow', 'Kodai insignia', 'Dragon hunter crossbow', 'Ancestral hat', 'Ancestral robe top', 'Ancestral robe bottom', 'Dexterous prayer scroll', 'Arcane prayer scroll', 'Olmlet']
-    },
-    {
-      id: 'theatre-of-blood',
-      name: 'Theatre of Blood',
-      area: 'Raid',
-      note: 'Scythe, rapier, hilt, and pet progress.',
-      map: '',
-      slayer: '',
-      items: ['Scythe of vitur', 'Ghrazi rapier', 'Sanguinesti staff', 'Avernic defender hilt', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', "Lil' zik"]
-    },
-    {
-      id: 'tombs-of-amascut',
-      name: 'Tombs of Amascut',
-      area: 'Raid',
-      note: 'TOA mega-rare and Masori checkoff.',
-      map: '',
-      slayer: '',
-      items: ["Tumeken's shadow", "Osmumten's fang", 'Lightbearer', "Elidinis' ward", 'Masori mask', 'Masori body', 'Masori chaps', "Tumeken's guardian"]
-    }
+    { id: 'chambers-of-xeric', name: 'Chambers of Xeric', area: 'Raid', note: 'Core mega-rare and prayer scroll tracking.', map: '', slayer: '', items: ['Twisted bow', 'Kodai insignia', 'Dragon hunter crossbow', 'Ancestral hat', 'Ancestral robe top', 'Ancestral robe bottom', 'Dexterous prayer scroll', 'Arcane prayer scroll', 'Olmlet'] },
+    { id: 'tombs-of-amascut', name: 'Tombs of Amascut', area: 'Raid', note: 'TOA mega-rare and Masori checkoff.', map: '', slayer: '', items: ["Tumeken's shadow", "Osmumten's fang", 'Lightbearer', "Elidinis' ward", 'Masori mask', 'Masori body', 'Masori chaps', "Tumeken's guardian"] },
+    { id: 'theatre-of-blood', name: 'Theatre of Blood', area: 'Raid', note: 'Scythe, rapier, hilt, and pet progress.', map: '', slayer: '', items: ['Scythe of vitur', 'Ghrazi rapier', 'Sanguinesti staff', 'Avernic defender hilt', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', "Lil' zik"] }
   ],
   other: [
-    {
-      id: 'barrows',
-      name: 'Barrows',
-      area: 'Morytania',
-      note: 'Brother set tracking in one compact card.',
-      map: 'Barrows',
-      slayer: 'Barrows',
-      items: ["Ahrim's robetop", "Dharok's greataxe", "Guthan's warspear", "Karil's leathertop", "Torag's hammers", "Verac's flail"]
-    },
-    {
-      id: 'dagannoth-kings',
-      name: 'Dagannoth Kings',
-      area: 'Waterbirth Dungeon',
-      note: 'Ring and axe tracker for DK sessions.',
-      map: '',
-      slayer: '',
-      items: ['Berserker ring', 'Seers ring', 'Warrior ring', 'Archers ring', 'Dragon axe', 'Mud battlestaff']
-    },
-    {
-      id: 'demonic-gorillas',
-      name: 'Demonic Gorillas',
-      area: 'Crash Site Cavern',
-      note: 'Zenyte and ballista piece tracker.',
-      map: '',
-      slayer: '',
-      items: ['Zenyte shard', 'Ballista limbs', 'Ballista spring', 'Monkey tail', 'Light frame', 'Heavy frame']
-    },
-    {
-      id: 'hueycoatl',
-      name: 'Hueycoatl',
-      area: 'Boss Encounter',
-      note: 'Small log card for Huey uniques.',
-      map: '',
-      slayer: '',
-      items: ['Huey unique 1', 'Huey unique 2', 'Huey unique 3', 'Huey pet']
-    }
+    { id: 'basilisk-knight', name: 'Basilisk Knight', area: 'Other', note: 'Jaw tracker from basilisk knights.', map: 'Jormungand Prison', slayer: '', items: ['Basilisk jaw'] },
+    { id: 'barrows', name: 'Barrows', area: 'Other', note: 'Brother set tracking in one compact card.', map: 'Barrows', slayer: 'Barrows', items: ["Ahrim's robetop", "Dharok's greataxe", "Guthan's warspear", "Karil's leathertop", "Torag's hammers", "Verac's flail"] },
+    { id: 'bounty-hunter', name: 'Bounty Hunter', area: 'Other', note: 'BH ornament and reward tracker.', map: '', slayer: '', items: ['Dragon claws ornament kit', 'Vesta\'s longsword', 'Statius\'s warhammer', 'Bounty crate'] },
+    { id: 'clue-scroll', name: 'Clue Scroll', area: 'Other', note: 'Treasure trail rollup log.', map: '', slayer: '', items: ['Ranger boots', 'Bloodhound', '3rd age pickaxe', 'Robin hood hat'] },
+    { id: 'crystal-chest', name: 'Crystal Chest', area: 'Other', note: 'Crystal key reward tracker.', map: '', slayer: '', items: ['Crystal key', 'Dragonstone platelegs', 'Dragonstone boots', 'Raw sharks'] },
+    { id: 'moons-of-peril', name: 'Moons of Peril', area: 'Other', note: 'Moon armor and weapon set tracker.', map: '', slayer: '', items: ['Blood moon helm', 'Blood moon chestplate', 'Blood moon tassets', 'Blue moon helm', 'Blue moon spear', 'Eclipse moon helm', 'Eclipse moon chestplate'] },
+    { id: 'pets', name: 'Pets', area: 'Other', note: 'Global pet checklist rollup.', map: '', slayer: '', items: ['Pet general graardor', 'Pet zilyana', 'Pet snakeling', 'Nexling', 'Phoenix', 'Bloodhound'] },
+    { id: 'revenants', name: 'Revenants', area: 'Other', note: 'Ancient weapon and ether tracker.', map: 'Revenants', slayer: '', items: ['Craw\'s bow', 'Viggora\'s chainmace', 'Thammaron\'s sceptre', 'Ancient relic', 'Revenant ether'] },
+    { id: 'shellbane-gryphon', name: 'Shellbane gryphon', area: 'Other', note: 'Impact monster collection entry.', map: '', slayer: '', items: ['Shellbane beak', 'Shellbane talon', 'Shellbane plume'] },
+    { id: 'slayer', name: 'Slayer', area: 'Other', note: 'Slayer reward rollup.', map: '', slayer: 'Slayer', items: ['Abyssal whip', 'Black mask', 'Occult necklace', 'Dragon warhammer', 'Basilisk jaw'] },
+    { id: 'tormented-demon', name: 'Tormented Demon', area: 'Other', note: 'Demonbane unique tracker.', map: 'Catacombs', slayer: '', items: ['Tormented synapse', 'Burning claw', 'Bone claws'] },
+    { id: 'zombie-pirates-locker', name: "Zombie Pirate's Locker", area: 'Other', note: 'Zombie pirate reward chest tracker.', map: '', slayer: '', items: ['Teleport anchor scroll', 'Pirate hook', 'Pirate bandana', 'Pirate leggings'] }
   ]
 };
 
@@ -626,122 +528,144 @@ const collectionItemImagePending = new Set();
 
 const IMPACT_SKILLING_GUIDES = [
   { name: "Agility", icon: "🏃", wiki: "https://impactmmo.wiki/Agility", focus: "Fastest route: Gnome Course into Wilderness Course.", routes: [
-    { from: 1, to: 52, method: "Gnome Course", detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
-    { from: 52, to: 99, method: "Wilderness Course", detail: "Buy an Ice Plateau teleport from ::shops, run southeast to the course, and loop it for roughly 13k XP per lap." }
+    { from: 1, to: 52, method: "Gnome Course", base_xp: 50, detail: "Use the teleport tree at ::home and search Gnome. Roughly 1k XP per lap." },
+    { from: 52, to: 99, method: "Wilderness Course", base_xp: 650, detail: "Buy an Ice Plateau teleport from ::shops, run southeast to the course, and loop it for roughly 13k XP per lap." }
   ] },
   { name: "Cooking", icon: "🍳", wiki: "https://impactmmo.wiki/Cooking", focus: "Fastest route: shop food upgrades, then monkfish to 99.", routes: [
-    { from: 1, to: 40, method: "Fish and cook early food", detail: "Catch and cook shrimp/salmon until Shanomi food unlocks. Wear cooking gauntlets from ::shop." },
-    { from: 40, to: 50, method: "Raw Lobsters", detail: "Buy from Shanomi at ::shop and cook at ::di or Catherby range." },
-    { from: 50, to: 80, method: "Raw Swordfish", detail: "Buy from ::shop and cook in the closest bank route you have." },
-    { from: 80, to: 99, method: "Raw Monkfish", detail: "More efficient than swordfish from 80 onward. Sharks are optional but slower." }
+    { from: 1, to: 40, method: "Fish and cook early food", base_xp: 30, detail: "Catch and cook shrimp/salmon until Shanomi food unlocks. Wear cooking gauntlets from ::shop." },
+    { from: 40, to: 50, method: "Raw Lobsters", base_xp: 120, detail: "Buy from Shanomi at ::shop and cook at ::di or Catherby range." },
+    { from: 50, to: 80, method: "Raw Swordfish", base_xp: 140, detail: "Buy from ::shop and cook in the closest bank route you have." },
+    { from: 80, to: 99, method: "Raw Monkfish", base_xp: 150, detail: "More efficient than swordfish from 80 onward. Sharks are optional but slower." }
   ] },
   { name: "Crafting", icon: "💎", wiki: "https://impactmmo.wiki/Crafting", focus: "Fastest route: gems from Shanomi, dragonstones/onyx when affordable.", routes: [
-    { from: 1, to: 16, method: "Opals", detail: "Cut opals bought from Shanomi at ::shops." },
-    { from: 16, to: 20, method: "Red Topaz", detail: "Move to red topaz for the next short bracket." },
-    { from: 20, to: 27, method: "Sapphires", detail: "Cut sapphires until emeralds unlock." },
-    { from: 27, to: 34, method: "Emeralds", detail: "Cut emeralds until ruby unlock." },
-    { from: 34, to: 43, method: "Rubies", detail: "Cut rubies to reach the main gem route." },
-    { from: 43, to: 55, method: "Diamonds", detail: "Use diamonds as the bridge into the faster route." },
-    { from: 55, to: 67, method: "Dragonstones", detail: "Dragonstones are about 30% faster than staying on diamonds." },
-    { from: 67, to: 99, method: "Onyx", detail: "Fastest listed method when cost is not the limiter. Dragonstones are the cheaper fast route." }
+    { from: 1, to: 16, method: "Opals", base_xp: 15, detail: "Cut opals bought from Shanomi at ::shops." },
+    { from: 16, to: 20, method: "Red Topaz", base_xp: 25, detail: "Move to red topaz for the next short bracket." },
+    { from: 20, to: 27, method: "Sapphires", base_xp: 50, detail: "Cut sapphires until emeralds unlock." },
+    { from: 27, to: 34, method: "Emeralds", base_xp: 67, detail: "Cut emeralds until ruby unlock." },
+    { from: 34, to: 43, method: "Rubies", base_xp: 85, detail: "Cut rubies to reach the main gem route." },
+    { from: 43, to: 55, method: "Diamonds", base_xp: 107, detail: "Use diamonds as the bridge into the faster route." },
+    { from: 55, to: 67, method: "Dragonstones", base_xp: 137, detail: "Dragonstones are about 30% faster than staying on diamonds." },
+    { from: 67, to: 99, method: "Onyx", base_xp: 167, detail: "Fastest listed method when cost is not the limiter. Dragonstones are the cheaper fast route." }
   ] },
   { name: "Farming", icon: "🌱", wiki: "https://impactmmo.wiki/Farming", focus: "Fastest route: compost to 30, then tree and fruit-tree runs.", routes: [
-    { from: 1, to: 30, method: "Rake and compost patches", detail: "Buy rake and compost at Farming Guild; rake/compost patches until 30." },
-    { from: 30, to: 33, method: "Willow trees", detail: "Run normal tree patches with willow saplings and apple basket protection." },
-    { from: 33, to: 42, method: "Willow + Banana", detail: "Add banana fruit trees to willow normal-tree runs." },
-    { from: 42, to: 45, method: "Willow + Curry", detail: "Swap fruit trees to curry." },
-    { from: 45, to: 57, method: "Maple + Curry", detail: "Move normal trees to maple; continue curry fruit trees." },
-    { from: 57, to: 60, method: "Maple + Papaya", detail: "Add papaya fruit trees." },
-    { from: 60, to: 68, method: "Yew + Papaya", detail: "Move normal trees to yew." },
-    { from: 68, to: 75, method: "Yew + Palm", detail: "Add palm fruit trees with papaya protection." },
-    { from: 75, to: 81, method: "Magic + Palm", detail: "Move normal trees to magic." },
-    { from: 81, to: 99, method: "Magic + Dragonfruit", detail: "Best listed 99 route: magic trees plus dragonfruit fruit trees." }
+    { from: 1, to: 30, method: "Rake and compost patches", base_xp: 15, detail: "Buy rake and compost at Farming Guild; rake/compost patches until 30." },
+    { from: 30, to: 33, method: "Willow trees", base_xp: 1450, detail: "Run normal tree patches with willow saplings and apple basket protection." },
+    { from: 33, to: 42, method: "Willow + Banana", base_xp: 1750, detail: "Add banana fruit trees to willow normal-tree runs." },
+    { from: 42, to: 45, method: "Willow + Curry", base_xp: 2900, detail: "Swap fruit trees to curry." },
+    { from: 45, to: 57, method: "Maple + Curry", base_xp: 3400, detail: "Move normal trees to maple; continue curry fruit trees." },
+    { from: 57, to: 60, method: "Maple + Papaya", base_xp: 6140, detail: "Add papaya fruit trees." },
+    { from: 60, to: 68, method: "Yew + Papaya", base_xp: 7060, detail: "Move normal trees to yew." },
+    { from: 68, to: 75, method: "Yew + Palm", base_xp: 10150, detail: "Add palm fruit trees with papaya protection." },
+    { from: 75, to: 81, method: "Magic + Palm", base_xp: 13760, detail: "Move normal trees to magic." },
+    { from: 81, to: 99, method: "Magic + Dragonfruit", base_xp: 17335, detail: "Best listed 99 route: magic trees plus dragonfruit fruit trees." }
   ] },
   { name: "Firemaking", icon: "🔥", wiki: "https://impactmmo.wiki/Firemaking", focus: "Fastest route: buy logs and cycle safe fire lanes.", routes: [
-    { from: 1, to: 15, method: "Normal Logs", detail: "Buy logs from Shanomi or chop them yourself." },
-    { from: 15, to: 30, method: "Oak Logs", detail: "Burn oak logs." },
-    { from: 30, to: 45, method: "Willow Logs", detail: "Burn willow logs." },
-    { from: 45, to: 60, method: "Maple Logs", detail: "Burn maple logs." },
-    { from: 60, to: 75, method: "Yew Logs", detail: "Burn yew logs." },
-    { from: 75, to: 99, method: "Magic Logs", detail: "Burn magic logs. Wiki suggests cycling ::home, ::dh, and ::pure lanes." }
+    { from: 1, to: 15, method: "Normal Logs", base_xp: 40, detail: "Buy logs from Shanomi or chop them yourself." },
+    { from: 15, to: 30, method: "Oak Logs", base_xp: 60, detail: "Burn oak logs." },
+    { from: 30, to: 45, method: "Willow Logs", base_xp: 90, detail: "Burn willow logs." },
+    { from: 45, to: 60, method: "Maple Logs", base_xp: 135, detail: "Burn maple logs." },
+    { from: 60, to: 75, method: "Yew Logs", base_xp: 202, detail: "Burn yew logs." },
+    { from: 75, to: 99, method: "Magic Logs", base_xp: 303, detail: "Burn magic logs. Wiki suggests cycling ::home, ::dh, and ::pure lanes." }
   ] },
   { name: "Fishing", icon: "🎣", wiki: "https://impactmmo.wiki/Fishing", focus: "Fastest route: net to 20, fly fish to 99.", routes: [
-    { from: 1, to: 20, method: "Small Net at Fishing Guild", detail: "Use the ::home tree to Fishing Guild and net fish until 20." },
-    { from: 20, to: 99, method: "Fly Fishing", detail: "Bring fly fishing rod and feathers. This is the wiki's fastest recommended method to 99." }
+    { from: 1, to: 20, method: "Small Net at Fishing Guild", base_xp: 10, detail: "Use the ::home tree to Fishing Guild and net fish until 20." },
+    { from: 20, to: 99, method: "Fly Fishing", base_xp: 50, detail: "Bring fly fishing rod and feathers. This is the wiki's fastest recommended method to 99." }
   ] },
   { name: "Fletching", icon: "🏹", wiki: "https://impactmmo.wiki/Fletching", focus: "Fastest practical route: bows, with Wilderness Resource Area x2 XP.", routes: [
-    { from: 1, to: 5, method: "Arrow shafts", detail: "Use regular logs." },
-    { from: 5, to: 10, method: "Shortbow (u)", detail: "Use regular logs." },
-    { from: 10, to: 20, method: "Longbow (u)", detail: "Use regular logs." },
-    { from: 20, to: 25, method: "Oak shortbow (u)", detail: "Use oak logs." },
-    { from: 25, to: 35, method: "Oak longbow (u)", detail: "Use oak logs." },
-    { from: 35, to: 40, method: "Willow shortbow (u)", detail: "Use willow logs." },
-    { from: 40, to: 50, method: "Willow longbow (u)", detail: "Use willow logs." },
-    { from: 50, to: 55, method: "Maple shortbow (u)", detail: "Use maple logs." },
-    { from: 55, to: 65, method: "Maple longbow (u)", detail: "Use maple logs." },
-    { from: 65, to: 70, method: "Yew shortbow (u)", detail: "Use yew logs." },
-    { from: 70, to: 85, method: "Yew longbow (u)", detail: "Use yew logs." },
-    { from: 85, to: 99, method: "Magic longbow (u)", detail: "Use magic logs. Darts are faster but not recommended by the wiki due to dart-tip supply." }
+    { from: 1, to: 5, method: "Arrow shafts", base_xp: 5, detail: "Use regular logs." },
+    { from: 5, to: 10, method: "Shortbow (u)", base_xp: 5, detail: "Use regular logs." },
+    { from: 10, to: 20, method: "Longbow (u)", base_xp: 10, detail: "Use regular logs." },
+    { from: 20, to: 25, method: "Oak shortbow (u)", base_xp: 16, detail: "Use oak logs." },
+    { from: 25, to: 35, method: "Oak longbow (u)", base_xp: 25, detail: "Use oak logs." },
+    { from: 35, to: 40, method: "Willow shortbow (u)", base_xp: 33, detail: "Use willow logs." },
+    { from: 40, to: 50, method: "Willow longbow (u)", base_xp: 41, detail: "Use willow logs." },
+    { from: 50, to: 55, method: "Maple shortbow (u)", base_xp: 50, detail: "Use maple logs." },
+    { from: 55, to: 65, method: "Maple longbow (u)", base_xp: 58, detail: "Use maple logs." },
+    { from: 65, to: 70, method: "Yew shortbow (u)", base_xp: 67, detail: "Use yew logs." },
+    { from: 70, to: 85, method: "Yew longbow (u)", base_xp: 75, detail: "Use yew logs." },
+    { from: 85, to: 99, method: "Magic longbow (u)", base_xp: 91, detail: "Use magic logs. Darts are faster but not recommended by the wiki due to dart-tip supply." }
   ] },
   { name: "Herblore", icon: "⚗️", wiki: "https://impactmmo.wiki/Herblore", focus: "Fastest route: shop supplies into Zamorak brews.", routes: [
-    { from: 1, to: 50, method: "Attack Potions", detail: "Guam, vial of water, unfinished potion, and eye of newt." },
-    { from: 50, to: 72, method: "Fishing Potions", detail: "Avantoe, vial of water, unfinished potion, and snape grass." },
-    { from: 72, to: 78, method: "Ranging Potions", detail: "Dwarf weed, vial of water, unfinished potion, and wine of zamorak." },
-    { from: 78, to: 99, method: "Zamorak Brews", detail: "Torstol, vial of water, unfinished potion, and jangerberries from the farming shop." }
+    { from: 1, to: 50, method: "Attack Potions", base_xp: 25, detail: "Guam, vial of water, unfinished potion, and eye of newt." },
+    { from: 50, to: 72, method: "Fishing Potions", base_xp: 47, detail: "Avantoe, vial of water, unfinished potion, and snape grass." },
+    { from: 72, to: 78, method: "Ranging Potions", base_xp: 162, detail: "Dwarf weed, vial of water, unfinished potion, and wine of zamorak." },
+    { from: 78, to: 99, method: "Zamorak Brews", base_xp: 200, detail: "Torstol, vial of water, unfinished potion, and jangerberries from the farming shop." }
   ] },
   { name: "Hunter", icon: "🪤", wiki: "https://impactmmo.wiki/Hunter", focus: "Fastest route: birds, chinchompas, then black chinchompas.", routes: [
-    { from: 1, to: 53, method: "Bird snares at Hunter Island", detail: "Catch birds on Hunter Island; use more traps as they unlock." },
-    { from: 53, to: 73, method: "Grey/Red Chinchompas", detail: "Buy box traps and catch chinchompas on Hunter Island." },
-    { from: 73, to: 99, method: "Black Chinchompas", detail: "Teleport to ::chins in the Wilderness with a Glory to escape below 30 Wilderness." }
+    { from: 1, to: 53, method: "Bird snares at Hunter Island", base_xp: 40, detail: "Catch birds on Hunter Island; use more traps as they unlock." },
+    { from: 53, to: 73, method: "Grey/Red Chinchompas", base_xp: 198, detail: "Buy box traps and catch chinchompas on Hunter Island." },
+    { from: 73, to: 99, method: "Black Chinchompas", base_xp: 315, detail: "Teleport to ::chins in the Wilderness with a Glory to escape below 30 Wilderness." }
   ] },
   { name: "Mining", icon: "⛏️", wiki: "https://impactmmo.wiki/Mining", focus: "Fastest route: coal to 99 or click-intensive gold in Resource Area.", routes: [
-    { from: 1, to: 15, method: "Copper and Tin", detail: "Mine at Mining Guild after buying a pickaxe from Shanomi." },
-    { from: 15, to: 30, method: "Iron Ore", detail: "Stay at Mining Guild; donator teleport is faster if available." },
-    { from: 30, to: 40, method: "Coal Ore", detail: "Mine coal near the Mining Guild bank; buy a coal bag for longer trips." },
-    { from: 40, to: 92, method: "Gold Ore in Wilderness Resource Area", detail: "Fastest listed alternative if efficient: double ore, more clicks, Wilderness risk." },
-    { from: 92, to: 99, method: "Amethyst", detail: "More AFK-friendly method at the Mining Guild amethyst rocks." }
+    { from: 1, to: 15, method: "Copper and Tin", base_xp: 17, detail: "Mine at Mining Guild after buying a pickaxe from Shanomi." },
+    { from: 15, to: 30, method: "Iron Ore", base_xp: 35, detail: "Stay at Mining Guild; donator teleport is faster if available." },
+    { from: 30, to: 40, method: "Coal Ore", base_xp: 50, detail: "Mine coal near the Mining Guild bank; buy a coal bag for longer trips." },
+    { from: 40, to: 92, method: "Gold Ore in Wilderness Resource Area", base_xp: 65, detail: "Fastest listed alternative if efficient: double ore, more clicks, Wilderness risk." },
+    { from: 92, to: 99, method: "Amethyst", base_xp: 240, detail: "More AFK-friendly method at the Mining Guild amethyst rocks." }
   ] },
   { name: "Prayer", icon: "🙏", wiki: "https://impactmmo.wiki/Prayer", focus: "Fastest practical route: superior dragon bones at Chaos Temple.", routes: [
-    { from: 1, to: 99, method: "Chaos Temple bones", detail: "Offer bones at Chaos Temple for a chance not to consume bones, effectively lowering cost. Vorkath is the recommended self-sufficient source of superior dragon bones." }
+    { from: 1, to: 99, method: "Chaos Temple bones", base_xp: 150, detail: "Offer bones at Chaos Temple for a chance not to consume bones, effectively lowering cost. Vorkath is the recommended self-sufficient source of superior dragon bones." }
   ] },
   { name: "Runecrafting", icon: "🌀", wiki: "https://impactmmo.wiki/Runecrafting", focus: "Fastest route: tiaras/death talismans into blood and soul runes.", routes: [
-    { from: 1, to: 77, method: "Tiaras or Death Talismans", detail: "Buy supplies at ::shop and use the Abyss Death Altar route. Wiki calls this the only recommended quick route to 77." },
-    { from: 77, to: 90, method: "Blood Runes", detail: "Mine dense essence, venerate blocks, chisel fragments, and craft blood runes." },
-    { from: 90, to: 99, method: "Soul Runes", detail: "Continue dense essence, then switch to the Soul Altar." }
+    { from: 1, to: 77, method: "Tiaras or Death Talismans", base_xp: 25, detail: "Buy supplies at ::shop and use the Abyss Death Altar route. Wiki calls this the only recommended quick route to 77." },
+    { from: 77, to: 90, method: "Blood Runes", base_xp: 23, detail: "Mine dense essence, venerate blocks, chisel fragments, and craft blood runes." },
+    { from: 90, to: 99, method: "Soul Runes", base_xp: 30, detail: "Continue dense essence, then switch to the Soul Altar." }
   ] },
   { name: "Slayer", icon: "💀", wiki: "https://impactmmo.wiki/Slayer", focus: "Fastest route: push task tiers, burst hard tasks, then elite boss tasks.", routes: [
-    { from: 1, to: 65, method: "Normal Duradel Tasks", detail: "Use ::slayer and save points early instead of extending tasks." },
-    { from: 65, to: 85, method: "Hard Tasks", detail: "Hard tasks are faster XP, often burstable/barrageable with Ancient spells." },
-    { from: 85, to: 99, method: "Elite Boss Tasks", detail: "Boss tasks are slower XP but stronger rewards and endgame value." }
+    { from: 1, to: 65, method: "Normal Duradel Tasks", base_xp: 100, detail: "Use ::slayer and save points early instead of extending tasks." },
+    { from: 65, to: 85, method: "Hard Tasks", base_xp: 250, detail: "Hard tasks are faster XP, often burstable/barrageable with Ancient spells." },
+    { from: 85, to: 99, method: "Elite Boss Tasks", base_xp: 500, detail: "Boss tasks are slower XP but stronger rewards and endgame value." }
   ] },
   { name: "Smithing", icon: "⚒️", wiki: "https://impactmmo.wiki/Smithing", focus: "Fastest route: Wilderness Resource Area x2 XP and rune route when funded.", routes: [
-    { from: 1, to: 24, method: "Bronze items", detail: "Mine copper/tin, smelt at Wilderness Resource Area hot vents, and smith the highest-bar bronze item you can." },
-    { from: 24, to: 50, method: "Iron warhammers", detail: "Mine iron, smelt, and smith iron warhammers for best XP/hour in this bracket." },
-    { from: 50, to: 55, method: "Mithril dagger", detail: "Use the efficient route in Wilderness Resource Area for x2 XP if you accept the risk." },
-    { from: 55, to: 59, method: "Mithril scimitar", detail: "Continue mithril scimitars." },
-    { from: 59, to: 68, method: "Mithril warhammer", detail: "Continue mithril warhammers." },
-    { from: 68, to: 79, method: "Mithril platebody", detail: "Use mithril platebodies until adamant warhammers unlock." },
-    { from: 79, to: 88, method: "Adamant warhammer", detail: "Move to adamant warhammers." },
-    { from: 88, to: 94, method: "Adamant platebody", detail: "Continue efficient route with adamant platebodies." },
-    { from: 94, to: 99, method: "Rune warhammer", detail: "Fastest listed expensive finish." }
+    { from: 1, to: 24, method: "Bronze items", base_xp: 12, detail: "Mine copper/tin, smelt at Wilderness Resource Area hot vents, and smith the highest-bar bronze item you can." },
+    { from: 24, to: 50, method: "Iron warhammers", base_xp: 25, detail: "Mine iron, smelt, and smith iron warhammers for best XP/hour in this bracket." },
+    { from: 50, to: 55, method: "Mithril dagger", base_xp: 50, detail: "Use the efficient route in Wilderness Resource Area for x2 XP if you accept the risk." },
+    { from: 55, to: 59, method: "Mithril scimitar", base_xp: 50, detail: "Continue mithril scimitar." },
+    { from: 59, to: 68, method: "Mithril warhammer", base_xp: 50, detail: "Continue mithril warhammer." },
+    { from: 68, to: 79, method: "Mithril platebody", base_xp: 50, detail: "Use mithril platebodies until adamant warhammers unlock." },
+    { from: 79, to: 88, method: "Adamant warhammer", base_xp: 62, detail: "Move to adamant warhammers." },
+    { from: 88, to: 94, method: "Adamant platebody", base_xp: 62, detail: "Continue efficient route with adamant platebodies." },
+    { from: 94, to: 99, method: "Rune warhammer", base_xp: 75, detail: "Fastest listed expensive finish." }
   ] },
   { name: "Thieving", icon: "🪙", wiki: "https://impactmmo.wiki/Thieving", focus: "Fastest route: stalls, with guard spam as an alternative.", routes: [
-    { from: 1, to: 5, method: "Pickpocket Man", detail: "At ::home south. Hide NPC attack options to make clicking easier." },
-    { from: 5, to: 20, method: "First home stall", detail: "Steal from the first stall on the left." },
-    { from: 20, to: 35, method: "Third home stall", detail: "Steal from stall 3; use adjacent stalls if quick." },
-    { from: 35, to: 50, method: "Fur Stall", detail: "Teleport to Ardougne and steal from the Fur Stall south of teleport." },
-    { from: 50, to: 65, method: "Silver Stall", detail: "Steal from the Silver Stall north of Ardougne teleport." },
-    { from: 65, to: 75, method: "High-level home stall", detail: "Use the highlighted high-level home stall." },
-    { from: 75, to: 99, method: "End stall", detail: "Steal from the end stall and the adjacent stall if you are quick." }
+    { from: 1, to: 5, method: "Pickpocket Man", base_xp: 8, detail: "At ::home south. Hide NPC attack options to make clicking easier." },
+    { from: 5, to: 20, method: "First home stall", base_xp: 16, detail: "Steal from the first stall on the left." },
+    { from: 20, to: 35, method: "Third home stall", base_xp: 24, detail: "Steal from stall 3; use adjacent stalls if quick." },
+    { from: 35, to: 50, method: "Fur Stall", base_xp: 36, detail: "Teleport to Ardougne and steal from the Fur Stall south of teleport." },
+    { from: 50, to: 65, method: "Silver Stall", base_xp: 54, detail: "Steal from the Silver Stall north of Ardougne teleport." },
+    { from: 65, to: 75, method: "High-level home stall", base_xp: 81, detail: "Use the highlighted high-level home stall." },
+    { from: 75, to: 99, method: "End stall", base_xp: 100, detail: "Steal from the end stall and the adjacent stall if you are quick." }
   ] },
   { name: "Woodcutting", icon: "🪓", wiki: "https://impactmmo.wiki/Woodcutting", focus: "Fastest route: trees into magic trees; burn logs if training Firemaking too.", routes: [
-    { from: 1, to: 15, method: "Trees", detail: "Use ::home tree to Varrock Oaks and chop regular trees." },
-    { from: 15, to: 30, method: "Oaks", detail: "Stay near Varrock Oaks." },
-    { from: 30, to: 60, method: "Willows", detail: "Use ::home tree to Draynor Willows." },
-    { from: 60, to: 75, method: "Yews", detail: "Use ::di yews or yews south of Seers bank." },
-    { from: 75, to: 99, method: "Magic Trees", detail: "Use ::di or the home tree teleport to magic trees." }
+    { from: 1, to: 15, method: "Trees", base_xp: 25, detail: "Use ::home tree to Varrock Oaks and chop regular trees." },
+    { from: 15, to: 30, method: "Oaks", base_xp: 37, detail: "Stay near Varrock Oaks." },
+    { from: 30, to: 60, method: "Willows", base_xp: 67, detail: "Use ::home tree to Draynor Willows." },
+    { from: 60, to: 75, method: "Yews", base_xp: 175, detail: "Use ::di yews or yews south of Seers bank." },
+    { from: 75, to: 99, method: "Magic Trees", base_xp: 250, detail: "Use ::di or the home tree teleport to magic trees." }
   ] }
 ];
+
+const OSRS_XP_TABLE = [
+  0, 0, 83, 174, 276, 388, 512, 650, 801, 969, 1154, 1358, 1584, 1833, 2107, 2411, 2746, 3115, 3523, 3973, 4470, 5018, 5624, 6291, 7028, 7842, 8740, 9730, 10824, 12031, 13363, 14833, 16456, 18247, 20224, 22406, 24815, 27473, 30408, 33648, 37224, 41171, 45529, 50339, 55649, 61512, 67983, 75127, 83014, 91717, 101303, 111845, 123435, 136174, 150174, 165568, 182500, 201137, 221669, 244299, 269251, 296790, 327196, 360816, 397970, 438996, 484311, 534337, 589578, 650596, 717983, 792453, 874730, 965618, 1066035, 1176915, 1299294, 1434277, 1583137, 1747188, 1928128, 2127812, 2348301, 2591740, 2860585, 3157490, 3485477, 3847313, 4246449, 4686915, 5173161, 5709772, 6301385, 6954215, 7674395, 8469493, 9348128, 10319200, 11392685, 12574044, 13034431
+];
+
+function getSkillMultiplier() {
+  const mode = state.server_mode || 'normal';
+  if (mode === 'normal') return 20;
+  return 10;
+}
+
+function getXPForLevel(level) {
+  return OSRS_XP_TABLE[Math.max(1, Math.min(99, Math.round(level)))] || 0;
+}
+
+function getLevelForXP(xp) {
+  for (let i = 1; i <= 99; i++) {
+    if (OSRS_XP_TABLE[i] > xp) return i - 1;
+  }
+  return 99;
+}
+
 
 const STRATEGY_LIBRARY = {
   conservative: {
@@ -2108,6 +2032,8 @@ function loadState(){
     skilling_levels:{},
     saved_usernames:[],
     skilling_mode:'fastest',
+    server_mode:'normal',
+    skilling_target_levels:{},
     slayer_logs:[],
     fp_logs:[],
     transfers:[],
@@ -9992,12 +9918,19 @@ function getRelevantSkillRoutes(skill, level, mode) {
 
 function renderSkilling(){
   state.skilling_levels = state.skilling_levels || {};
+  state.skilling_target_levels = state.skilling_target_levels || {};
   renderStatsSyncStatus('skilling-sync-status');
   const search = String(document.getElementById('skilling-search')?.value || '').trim().toLowerCase();
+  
   const modeSelect = document.getElementById('skilling-mode');
   if(modeSelect && state.skilling_mode && modeSelect.value !== state.skilling_mode) modeSelect.value = state.skilling_mode;
   const mode = modeSelect?.value || state.skilling_mode || 'fastest';
   state.skilling_mode = mode;
+
+  const serverModeSelect = document.getElementById('skilling-server-mode');
+  if(serverModeSelect && state.server_mode && serverModeSelect.value !== state.server_mode) serverModeSelect.value = state.server_mode;
+  state.server_mode = serverModeSelect?.value || state.server_mode || 'normal';
+
   const sort = document.getElementById('skilling-sort')?.value || 'wiki';
   const skills = IMPACT_SKILLING_GUIDES.map((skill, index) => ({
     ...skill,
@@ -10037,6 +9970,16 @@ function renderSkilling(){
     const routes = getRelevantSkillRoutes(skill, skill.level, mode);
     const activeRoute = routes[0];
     const modeSummary = getSkillModeSummary(skill, skill.level, mode);
+    
+    // XP Calculations
+    const currentXP = getXPForLevel(skill.level);
+    const targetLevel = state.skilling_target_levels[skill.name] || Math.min(99, Math.max(skill.level + 1, nextMilestone));
+    const targetXP = getXPForLevel(targetLevel);
+    const xpNeeded = Math.max(0, targetXP - currentXP);
+    const multiplier = getSkillMultiplier();
+    const actionXP = (activeRoute?.base_xp || 0) * multiplier;
+    const actionsNeeded = actionXP > 0 ? Math.ceil(xpNeeded / actionXP) : 0;
+
     const nextTitle = mode === 'fastest'
       ? (activeRoute?.method || 'Open the wiki guide')
       : (mode === 'money' ? 'Money making route' : 'Middle route');
@@ -10044,12 +9987,11 @@ function renderSkilling(){
       ? (activeRoute?.detail || skill.focus)
       : modeSummary;
     const safeName = escapeHtml(skill.name);
-    const safeFocus = escapeHtml(skill.focus);
-    const safeModeSummary = escapeHtml(modeSummary);
     const safeSource = escapeHtml(skill.source);
     const progressCopy = skill.level >= 99
       ? 'This skill is finished. You can leave it parked unless you want route notes handy.'
       : `${99 - skill.level} levels left to max. ${status} keeps this route moving without guesswork.`;
+    
     return `
       <div class="skilling-card ${skill.level >= 99 ? 'maxed' : ''}">
         <div class="skilling-card-shell">
@@ -10064,7 +10006,7 @@ function renderSkilling(){
               </div>
               <div class="skilling-level-badge">${skill.level}</div>
             </div>
-            <div class="skilling-focus">${safeModeSummary}</div>
+            <div class="skilling-focus">${escapeHtml(modeSummary)}</div>
             <div class="skilling-progress-panel">
               <div class="skilling-progress-row">
                 <span>${safeSource}</span>
@@ -10080,6 +10022,30 @@ function renderSkilling(){
               <div class="skilling-next-title">${skill.level >= 99 ? 'You are already 99.' : escapeHtml(nextTitle)}</div>
               <div class="skilling-next-copy">${skill.level >= 99 ? 'No more levels needed for max.' : escapeHtml(nextCopy)}</div>
             </div>
+            
+            <div class="skilling-calculator">
+              <div class="calc-row">
+                <div class="calc-input-group">
+                  <label>Current Level</label>
+                  <input type="number" value="${skill.level}" min="1" max="99" onchange="updateSkillingLevel('${skill.name}', this.value); renderSkilling()">
+                </div>
+                <div class="calc-input-group">
+                  <label>Target Level</label>
+                  <input type="number" value="${targetLevel}" min="1" max="99" onchange="updateSkillingTargetLevel('${skill.name}', this.value); renderSkilling()">
+                </div>
+              </div>
+              <div class="calc-results">
+                <div class="calc-stat">
+                  <span class="calc-label">XP Needed</span>
+                  <span class="calc-value">${xpNeeded.toLocaleString()}</span>
+                </div>
+                <div class="calc-stat">
+                  <span class="calc-label">Actions (${activeRoute?.method || 'N/A'})</span>
+                  <span class="calc-value highlight">${actionsNeeded.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
             <div class="skilling-route-list">
               ${routes.map(route => `
                 <div class="skilling-route-step">
@@ -10092,26 +10058,22 @@ function renderSkilling(){
           <div class="skilling-side">
             <div class="skilling-stat-panel">
               <div class="skilling-progress-row">
-                <span>Current</span>
+                <span>Current Level</span>
                 <span>${skill.level}/99</span>
               </div>
               <div class="skilling-progress-row">
-                <span>Mode</span>
-                <span>${mode === 'money' ? 'Money' : mode === 'middle' ? 'Middle' : 'Fastest'}</span>
+                <span>Current XP</span>
+                <span>${currentXP.toLocaleString()}</span>
               </div>
               <div class="skilling-progress-row">
-                <span>Next target</span>
-                <span>${nextMilestone}</span>
+                <span>Target XP</span>
+                <span>${targetXP.toLocaleString()}</span>
               </div>
             </div>
             <div class="skilling-card-actions">
-              <label class="skilling-level-input">
-                ${skill.source === 'Imported Stats' ? 'Stats level' : 'Manual level'}
-                <input type="number" min="1" max="99" value="${skill.level}" ${skill.source === 'Imported Stats' ? 'disabled' : ''} onchange="updateSkillingLevel('${safeName}', this.value)">
-              </label>
               <div class="skilling-action-row">
-                ${skill.source === 'Imported Stats' ? '' : `<button class="btn-sm" onclick="markSkill99('${safeName}')">Mark 99</button>`}
-                <a class="btn-sm skilling-wiki-btn" href="${skill.wiki}" target="_blank" rel="noopener">Wiki Guide</a>
+                ${skill.level >= 99 ? '' : `<button class="btn primary btn-sm" style="width:100%" onclick="updateSkillingLevel('${skill.name}', 99); renderSkilling()">Mark 99</button>`}
+                <a class="btn secondary btn-sm skilling-wiki-btn" style="width:100%" href="${skill.wiki}" target="_blank" rel="noopener">Open Wiki Guide</a>
               </div>
             </div>
           </div>
@@ -10119,6 +10081,12 @@ function renderSkilling(){
       </div>
     `;
   }).join('');
+}
+
+function updateSkillingTargetLevel(skillName, value) {
+  state.skilling_target_levels = state.skilling_target_levels || {};
+  state.skilling_target_levels[skillName] = Math.max(1, Math.min(99, Math.round(Number(value) || 1)));
+  saveState();
 }
 
 function renderPanel(tab){

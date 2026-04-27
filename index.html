@@ -950,6 +950,13 @@
             <option value="money">Money Making</option>
             <option value="middle">Middle</option>
           </select>
+          <select id="skilling-server-mode" onchange="state.server_mode=this.value; saveState(); renderSkilling()">
+            <option value="normal">Normal (20x XP)</option>
+            <option value="realism">Realism (10x XP)</option>
+            <option value="ironman">Standard Ironman (10x XP)</option>
+            <option value="hc_ironman">Hardcore Ironman (10x XP)</option>
+            <option value="u_ironman">Ultimate Ironman (10x XP)</option>
+          </select>
           <select id="skilling-sort" onchange="renderSkilling()">
             <option value="wiki">Wiki order</option>
             <option value="lowest">Lowest level first</option>

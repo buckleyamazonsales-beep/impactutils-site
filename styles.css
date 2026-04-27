@@ -299,6 +299,16 @@
   .skilling-side{display:grid;gap:12px;}
   .skilling-stat-panel{padding:14px 16px;border-radius:18px;border:1px solid var(--border);background:rgba(255,255,255,0.025);}
   .skilling-stat-panel .skilling-progress-row{margin-bottom:10px;}
+  .skilling-calculator{display:grid;gap:12px;padding:16px;border-radius:20px;border:1px solid var(--border2);background:rgba(255,255,255,0.03);position:relative;z-index:1;}
+  .calc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .calc-input-group{display:grid;gap:6px;}
+  .calc-input-group label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--hint);text-transform:uppercase;letter-spacing:0.08em;}
+  .calc-input-group input{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface1);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;width:100%;}
+  .calc-results{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
+  .calc-stat{display:grid;gap:4px;}
+  .calc-label{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .calc-value{font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+  .calc-value.highlight{color:var(--accent);}
   .skilling-card-actions{display:grid;gap:10px;position:relative;z-index:1;}
   .skilling-level-input{display:grid;gap:6px;min-width:122px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
   .skilling-level-input input{height:36px;padding:7px 10px;border-radius:999px;}
